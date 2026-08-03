@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Sin `maximum-scale` ni `user-scalable=no`: bloquear el zoom es una barrera
+      de accesibilidad, y `touch-action: manipulation` ya evita el retardo al
+      tocar sin necesidad de desactivarlo.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Juego educativo en español para niñas y niños de 4 a 6 años: letras, números, sumas, formas y lógica. Sin anuncios, sin cuentas y sin recogida de datos."
+    />
+    <meta name="theme-color" content="#059669" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Bosque Mágico" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="El Bosque Mágico de los Bichitos" />
+    <meta
+      property="og:description"
+      content="13 pruebas de letras, números y formas para peques. Gratis, sin anuncios y jugable sin conexión."
+    />
+    <meta property="og:image" content="/icons/icon-512.png" />
+
+    <title>El Bosque Mágico de los Bichitos</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p style="font-family: system-ui, sans-serif; padding: 2rem; text-align: center">
+        Este juego necesita JavaScript activado para funcionar.
+      </p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
