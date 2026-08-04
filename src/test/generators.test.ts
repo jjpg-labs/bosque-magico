@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { seededRng } from '../lib/random';
 import { GAMES } from '../lib/games/catalog';
+import { ANIMAL_SOUNDS, EMOTIONS, RHYME_FAMILIES, ROUTINE_STEPS } from '../lib/games/data';
 import { generateRounds, initialLetter } from '../lib/games/generators';
 import type { Round } from '../lib/games/types';
 
@@ -27,8 +28,8 @@ describe('initialLetter', () => {
 });
 
 describe('generadores de rondas', () => {
-  it('cubre las 13 pruebas del catálogo', () => {
-    expect(GAMES).toHaveLength(13);
+  it('cubre las 19 pruebas del catálogo', () => {
+    expect(GAMES).toHaveLength(19);
     // La de memoria no usa generador; las demás sí. Ninguna debe quedar sin
     // implementar: en la versión original, 10 de 13 caían a un botón genérico.
     const unimplemented = GAMES.filter((game) => game.kind === 'choice' && !game.generate);
@@ -172,6 +173,113 @@ describe('contar', () => {
       if (round.prompt.kind !== 'emoji-group') continue;
       const answer = round.options.find((option) => option.correct)!;
       expect(answer.display).toEqual({ kind: 'text', text: String(round.prompt.items.length) });
+    }
+  });
+});
+
+describe('Colores del Bosque', () => {
+  const colors = GAMES.find((game) => game.id === 14)!.generate!;
+
+  it('pide un color y la opción correcta es ese color', () => {
+    for (const seed of SEEDS) {
+      const round = colors(seededRng(seed));
+      const correct = round.options.find((option) => option.correct)!;
+      expect(round.question).toBe(`Toca el color ${correct.label}`);
+    }
+  });
+});
+
+describe('¿Quién Hace Este Sonido?', () => {
+  const animalSound = GAMES.find((game) => game.id === 15)!.generate!;
+
+  it('el sonido locutado corresponde al animal marcado como correcto', () => {
+    for (const seed of SEEDS) {
+      const round = animalSound(seededRng(seed));
+      const correct = round.options.find((option) => option.correct)!;
+      const entry = ANIMAL_SOUNDS.find((a) => a.name === correct.label)!;
+      expect(entry).toBeDefined();
+      expect(round.spoken).toContain(entry.sound);
+    }
+  });
+});
+
+describe('¿Cómo Se Siente?', () => {
+  const emotion = GAMES.find((game) => game.id === 16)!.generate!;
+
+  it('el emoji mostrado corresponde a la emoción marcada como correcta', () => {
+    for (const seed of SEEDS) {
+      const round = emotion(seededRng(seed));
+      expect(round.prompt.kind).toBe('emoji-single');
+      if (round.prompt.kind !== 'emoji-single') continue;
+      const correct = round.options.find((option) => option.correct)!;
+      const entry = EMOTIONS.find((e) => e.name === correct.label)!;
+      expect(entry).toBeDefined();
+      expect(entry.emoji).toBe(round.prompt.item);
+    }
+  });
+});
+
+describe('Rimas Divertidas', () => {
+  const rhyme = GAMES.find((game) => game.id === 17)!.generate!;
+
+  it('la opción correcta pertenece a la misma familia de rima que la palabra escuchada', () => {
+    for (const seed of SEEDS) {
+      const round = rhyme(seededRng(seed));
+      const targetMatch = round.question.match(/¿Qué rima con (.+)\?/);
+      expect(targetMatch).not.toBeNull();
+      const target = targetMatch![1];
+      const family = RHYME_FAMILIES.find((f) => f.some((w) => w.word === target));
+      expect(family).toBeDefined();
+      const correct = round.options.find((option) => option.correct)!;
+      expect(family!.some((w) => w.word === correct.label)).toBe(true);
+    }
+  });
+});
+
+describe('Grande y Pequeño', () => {
+  const size = GAMES.find((game) => game.id === 18)!.generate!;
+
+  it('exactamente una opción es grande y la otra pequeña', () => {
+    for (const seed of SEEDS) {
+      const round = size(seededRng(seed));
+      const scales = round.options.map((option) =>
+        option.display.kind === 'emoji' ? option.display.scale : undefined,
+      );
+      expect(scales.slice().sort()).toEqual(['lg', 'sm']);
+    }
+  });
+
+  it('la pregunta pide GRANDE o PEQUEÑO acorde a la opción correcta', () => {
+    for (const seed of SEEDS) {
+      const round = size(seededRng(seed));
+      const correct = round.options.find((option) => option.correct)!;
+      const correctScale = correct.display.kind === 'emoji' ? correct.display.scale : undefined;
+      expect(correctScale).toBe(round.question.includes('GRANDE') ? 'lg' : 'sm');
+    }
+  });
+});
+
+describe('La Rutina del Día', () => {
+  const routine = GAMES.find((game) => game.id === 19)!.generate!;
+
+  it('deja visible el primer paso de la ventana y solo oculta uno', () => {
+    for (const seed of SEEDS) {
+      const round = routine(seededRng(seed));
+      expect(round.prompt.kind).toBe('sequence');
+      if (round.prompt.kind !== 'sequence') continue;
+      expect(round.prompt.items[0]).not.toBeNull();
+      expect(round.prompt.items.filter((item) => item === null)).toHaveLength(1);
+    }
+  });
+
+  it('la opción correcta es el paso que de verdad falta en la secuencia', () => {
+    for (const seed of SEEDS) {
+      const round = routine(seededRng(seed));
+      if (round.prompt.kind !== 'sequence') continue;
+      const correct = round.options.find((option) => option.correct)!;
+      const step = ROUTINE_STEPS.find((s) => s.label === correct.label)!;
+      expect(step).toBeDefined();
+      expect(correct.display).toEqual({ kind: 'emoji', emoji: step.emoji });
     }
   });
 });

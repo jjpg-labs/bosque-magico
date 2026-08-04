@@ -17,9 +17,11 @@ const LEGACY_KEY = 'bosque_bichitos_progress';
 
 export interface Progress {
   completed: number[];
+  /** Veces que se ha empezado cada prueba. Ausente/vacío en progreso migrado de v2. */
+  playCounts: Record<number, number>;
 }
 
-export const emptyProgress: Progress = { completed: [] };
+export const emptyProgress: Progress = { completed: [], playCounts: {} };
 
 function sanitize(ids: unknown): number[] {
   if (!Array.isArray(ids)) return [];
@@ -27,6 +29,18 @@ function sanitize(ids: unknown): number[] {
     (id): id is number => typeof id === 'number' && Number.isInteger(id) && id >= 1 && id <= TOTAL_GAMES,
   );
   return [...new Set(valid)].sort((a, b) => a - b);
+}
+
+function sanitizePlayCounts(raw: unknown): Record<number, number> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<number, number> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const id = Number(key);
+    if (Number.isInteger(id) && id >= 1 && id <= TOTAL_GAMES && typeof value === 'number' && value >= 0) {
+      out[id] = value;
+    }
+  }
+  return out;
 }
 
 export function loadProgress(storage: Storage | undefined = safeStorage()): Progress {
@@ -37,7 +51,10 @@ export function loadProgress(storage: Storage | undefined = safeStorage()): Prog
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
       const completed = sanitize((parsed as { completed?: unknown } | null)?.completed);
-      return { completed };
+      // Esquema v2 no tenía playCounts: se migra a {} de forma aditiva, igual
+      // que en su día se migró el formato de un solo fichero HTML.
+      const playCounts = sanitizePlayCounts((parsed as { playCounts?: unknown } | null)?.playCounts);
+      return { completed, playCounts };
     }
 
     // Migración desde el formato de la versión de un solo fichero HTML.
@@ -45,7 +62,7 @@ export function loadProgress(storage: Storage | undefined = safeStorage()): Prog
     if (legacy) {
       const parsed: unknown = JSON.parse(legacy);
       const completed = sanitize((parsed as { completed?: unknown } | null)?.completed);
-      const migrated = { completed };
+      const migrated = { completed, playCounts: {} };
       saveProgress(migrated, storage);
       return migrated;
     }
@@ -59,16 +76,34 @@ export function loadProgress(storage: Storage | undefined = safeStorage()): Prog
 export function saveProgress(progress: Progress, storage: Storage | undefined = safeStorage()): void {
   if (!storage) return;
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, completed: progress.completed }));
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 2, completed: progress.completed, playCounts: progress.playCounts }),
+    );
   } catch {
     // Cuota llena o modo privado: el progreso se pierde al recargar, pero la
     // partida en curso sigue funcionando.
   }
 }
 
+/** Se llama cada vez que se entra a jugar una prueba (se supere o no). */
+export function incrementPlayCount(progress: Progress, gameId: number): Progress {
+  const current = progress.playCounts[gameId] ?? 0;
+  return { ...progress, playCounts: { ...progress.playCounts, [gameId]: current + 1 } };
+}
+
+/**
+ * Nivel de dificultad numérica (0, 1 o 2): sube cada 3 partidas jugadas de
+ * esa prueba, con tope en 2 para no disparar la dificultad sin límite.
+ */
+export function tierFor(progress: Progress, gameId: number): number {
+  const plays = progress.playCounts[gameId] ?? 0;
+  return Math.min(Math.floor(plays / 3), 2);
+}
+
 export function markCompleted(progress: Progress, gameId: number): Progress {
   if (progress.completed.includes(gameId)) return progress;
-  return { completed: [...progress.completed, gameId].sort((a, b) => a - b) };
+  return { ...progress, completed: [...progress.completed, gameId].sort((a, b) => a - b) };
 }
 
 export function resetProgress(storage: Storage | undefined = safeStorage()): Progress {

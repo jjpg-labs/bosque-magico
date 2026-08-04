@@ -14,10 +14,12 @@ import type { Sticker } from './lib/games/catalog';
 import {
   emptyProgress,
   hasSticker,
+  incrementPlayCount,
   loadProgress,
   markCompleted,
   resetProgress,
   saveProgress,
+  tierFor,
 } from './lib/progress';
 import type { Progress } from './lib/progress';
 
@@ -66,6 +68,17 @@ export default function App() {
   }, []);
 
   const goToMap = useCallback(() => setView('map'), []);
+
+  const handleSelectGame = useCallback(
+    (gameId: number) => {
+      const next = incrementPlayCount(progress, gameId);
+      setProgress(next);
+      saveProgress(next);
+      setCurrentGameId(gameId);
+      setView('game');
+    },
+    [progress],
+  );
 
   const unlockedCount = STICKERS.filter((s) => hasSticker(progress, s.gameId)).length;
   const currentGame = findGame(currentGameId);
@@ -140,14 +153,7 @@ export default function App() {
 
       <main id="contenido" className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-6">
         {view === 'map' && (
-          <GameMap
-            progress={progress}
-            onSpeak={speak}
-            onSelectGame={(id) => {
-              setCurrentGameId(id);
-              setView('game');
-            }}
-          />
+          <GameMap progress={progress} onSpeak={speak} onSelectGame={handleSelectGame} />
         )}
 
         {view === 'game' && currentGame && (
@@ -157,8 +163,9 @@ export default function App() {
             onBack={goToMap}
             onSpeak={speak}
             onComplete={handleComplete}
+            tier={tierFor(progress, currentGame.id)}
             onNext={() => {
-              if (currentGame.id < TOTAL_GAMES) setCurrentGameId(currentGame.id + 1);
+              if (currentGame.id < TOTAL_GAMES) handleSelectGame(currentGame.id + 1);
               else goToMap();
             }}
           />

@@ -12,9 +12,11 @@ interface GameContainerProps {
   onSpeak: (text: string) => void;
   onComplete: (gameId: number) => void;
   onNext: () => void;
+  /** Nivel de dificultad numérica (0-2) — ver `progress.ts:tierFor`. */
+  tier?: number;
 }
 
-export function GameContainer({ game, onBack, onSpeak, onComplete, onNext }: GameContainerProps) {
+export function GameContainer({ game, onBack, onSpeak, onComplete, onNext, tier = 0 }: GameContainerProps) {
   const [passed, setPassed] = useState(false);
 
   // Reinicia al cambiar de prueba (el componente se reutiliza entre juegos).
@@ -112,6 +114,7 @@ export function GameContainer({ game, onBack, onSpeak, onComplete, onNext }: Gam
               roundsToWin={game.roundsToWin}
               onSpeak={onSpeak}
               onWin={handleWin}
+              tier={tier}
             />
           )
         )}

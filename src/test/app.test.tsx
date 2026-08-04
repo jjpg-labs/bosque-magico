@@ -70,16 +70,16 @@ describe('ChoiceGame', () => {
 });
 
 describe('App', () => {
-  it('muestra el mapa con las 13 pruebas', async () => {
+  it('muestra el mapa con las 19 pruebas', async () => {
     render(<App />);
     expect(await screen.findByText('¡El Mapa del Bosque! 🌳')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^Prueba \d+:/ })).toHaveLength(13);
+    expect(screen.getAllByRole('button', { name: /^Prueba \d+:/ })).toHaveLength(19);
   });
 
   it('empieza sin pegatinas y solo con la primera prueba abierta', async () => {
     render(<App />);
 
-    expect(await screen.findByRole('button', { name: /Álbum \(0\/13\)/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Álbum \(0\/19\)/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Prueba 1:.*Disponible$/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /^Prueba 2:.*Bloqueada$/ })).toBeDisabled();
   });
@@ -92,7 +92,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('button', { name: /Álbum \(2\/13\)/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Álbum \(2\/19\)/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Prueba 3:.*Disponible$/ })).toBeEnabled();
   });
 

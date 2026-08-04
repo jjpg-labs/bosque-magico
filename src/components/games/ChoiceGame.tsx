@@ -18,12 +18,24 @@ interface ChoiceGameProps {
   onSpeak: (text: string) => void;
   onWin: () => void;
   rng?: Rng;
+  /** Nivel de dificultad numérica (0-2) — ver `progress.ts:tierFor`. */
+  tier?: number;
 }
 
-export function ChoiceGame({ generate, roundsToWin, onSpeak, onWin, rng = defaultRng }: ChoiceGameProps) {
+export function ChoiceGame({
+  generate,
+  roundsToWin,
+  onSpeak,
+  onWin,
+  rng = defaultRng,
+  tier = 0,
+}: ChoiceGameProps) {
   // Las rondas se generan una sola vez por montaje: si se regenerasen en cada
   // render, la pregunta cambiaría bajo el dedo de la niña.
-  const rounds = useMemo(() => generateRounds(generate, rng, roundsToWin), [generate, roundsToWin, rng]);
+  const rounds = useMemo(
+    () => generateRounds(generate, rng, roundsToWin, tier),
+    [generate, roundsToWin, rng, tier],
+  );
 
   const [index, setIndex] = useState(0);
   const [optionStates, setOptionStates] = useState<Record<string, OptionState>>({});

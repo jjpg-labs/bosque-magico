@@ -1,7 +1,8 @@
 # 🌳 El Bosque Mágico de los Bichitos
 
-Juego educativo en español para peques de 4 a 6 años: letras, números, sumas, restas,
-formas geométricas y lógica, repartidos en 13 pruebas con un álbum de pegatinas.
+Juego educativo en español para peques de 3 a 6 años: letras, números, sumas, restas,
+formas geométricas, lógica, colores, sonidos, emociones y rimas, repartidos en 19
+pruebas con un álbum de pegatinas.
 
 **Sin anuncios, sin cuentas, sin servidor y sin recogida de datos.** Se instala como
 app en el móvil o la tablet y funciona sin conexión.
@@ -18,15 +19,23 @@ se gana su pegatina y se abre la siguiente.
 Todas las instrucciones se **leen en voz alta** (síntesis de voz del navegador, en
 español), porque a esa edad todavía no se lee. El botón 🔊 las repite.
 
+Las pruebas con rango numérico (contar, sumas, restas, serie numérica, más/menos)
+tienen **dificultad escalonada**: cada 3 partidas jugadas de la misma prueba el rango
+sube un nivel (hasta 2 niveles por encima del inicial), así que sigue dando trabajo
+según va creciendo quien juega.
+
 | Prueba | Qué trabaja                       | Prueba | Qué trabaja                           |
 | ------ | --------------------------------- | ------ | ------------------------------------- |
-| 1      | Letra inicial de una palabra      | 8      | Memoria (parejas)                     |
-| 2      | Contar hasta 8                    | 9      | Comparar cantidades (más / menos)     |
-| 3      | Sumas hasta 6                     | 10     | Serie numérica                        |
-| 4      | Restas                            | 11     | Vocal inicial (conciencia fonológica) |
-| 5      | Reconocer figuras geométricas     | 12     | Forma geométrica de objetos reales    |
-| 6      | Patrones (ABAB, AABAAB, ABC)      | 13     | Desafío final combinado               |
-| 7      | Clasificar y encontrar el intruso |        |                                       |
+| 1      | Letra inicial de una palabra      | 11     | Vocal inicial (conciencia fonológica) |
+| 2      | Contar (escala con el nivel)      | 12     | Forma geométrica de objetos reales    |
+| 3      | Sumas (escala con el nivel)       | 13     | Desafío final combinado               |
+| 4      | Restas (escala con el nivel)      | 14     | Colores                               |
+| 5      | Reconocer figuras geométricas     | 15     | Sonidos de animales (adivina cuál es) |
+| 6      | Patrones (ABAB, AABAAB, ABC)      | 16     | Emociones (caras y cómo se sienten)   |
+| 7      | Clasificar y encontrar el intruso | 17     | Rimas (conciencia fonológica)         |
+| 8      | Memoria (parejas)                 | 18     | Comparar tamaños (grande / pequeño)   |
+| 9      | Comparar cantidades (más / menos) | 19     | Rutina del día (orden de las cosas)   |
+| 10     | Serie numérica                    |        |                                       |
 
 ### Fichas para imprimir
 
@@ -62,7 +71,7 @@ src/
 │   └── games/
 │       ├── data.ts       # animales, palabras, formas, categorías
 │       ├── generators.ts # un generador de preguntas por prueba
-│       ├── catalog.ts    # las 13 pruebas y sus pegatinas
+│       ├── catalog.ts    # las 19 pruebas y sus pegatinas
 │       └── types.ts
 ├── components/           # UI (mapa, juego, álbum, fichas, avatar)
 ├── hooks/useSpeech.ts
@@ -125,7 +134,8 @@ Punto importante tratándose de una app infantil: **la app no recoge ningún dat
 - No hay peticiones a terceros: React, la fuente y el resto de recursos viajan en el
   propio despliegue. La fuente está autoalojada precisamente para no filtrar la IP de
   quien juega a Google Fonts.
-- Lo único que se guarda es la lista de pruebas superadas, en el `localStorage` del
+- Lo único que se guarda es la lista de pruebas superadas y cuántas veces se ha
+  jugado cada una (para la dificultad escalonada), en el `localStorage` del
   dispositivo. No sale de ahí y se borra con el botón «Borrar progreso» del pie.
 
 Esto deja la app fuera del alcance de las obligaciones de consentimiento de COPPA y

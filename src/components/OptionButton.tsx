@@ -42,7 +42,17 @@ export function OptionButton({ option, state, disabled, onSelect }: OptionButton
       )}
 
       {option.display.kind === 'emoji' && (
-        <span className="text-5xl leading-none">{option.display.emoji}</span>
+        <span
+          className={`leading-none ${
+            option.display.scale === 'lg'
+              ? 'text-7xl'
+              : option.display.scale === 'sm'
+                ? 'text-2xl'
+                : 'text-5xl'
+          }`}
+        >
+          {option.display.emoji}
+        </span>
       )}
 
       {option.display.kind === 'shape' && <Shape shape={option.display.shape} className="w-16 h-16" />}

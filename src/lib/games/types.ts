@@ -23,7 +23,8 @@ export interface Option {
   /** Qué se pinta: una letra o número, un emoji, una figura o un grupo de emojis. */
   display:
     | { kind: 'text'; text: string }
-    | { kind: 'emoji'; emoji: string }
+    /** `scale` es opcional: solo lo usa "Grande y Pequeño" para variar el tamaño visual. */
+    | { kind: 'emoji'; emoji: string; scale?: 'sm' | 'lg' }
     | { kind: 'shape'; shape: ShapeName }
     | { kind: 'group'; items: string[] };
   correct: boolean;
@@ -38,7 +39,12 @@ export interface Round {
   options: Option[];
 }
 
-export type RoundGenerator = (rng: Rng) => Round;
+/**
+ * `tier` sube la dificultad numérica (0, 1 o 2) según cuántas veces se ha
+ * jugado la prueba — ver `progress.ts:tierFor`. Es opcional: los generadores
+ * sin rango numérico natural (letras, formas, patrones...) lo ignoran.
+ */
+export type RoundGenerator = (rng: Rng, tier?: number) => Round;
 
 export interface MemoryCard {
   id: string;
