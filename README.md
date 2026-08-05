@@ -48,6 +48,10 @@ cada pulsación de «Otra ficha» produce seis ejercicios nuevos de la prueba el
 
 Requiere Node.js 20 o superior.
 
+> ¿Quieres añadir una prueba nueva? La receta completa está en
+> [`docs/adding-a-prueba.md`](docs/adding-a-prueba.md) — pensada tanto para
+> seguirla a mano como para dársela a un asistente de IA (Claude, Gemini...).
+
 ```bash
 npm install
 npm run dev        # servidor de desarrollo

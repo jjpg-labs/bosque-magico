@@ -1,0 +1,21 @@
+description = "Añade una nueva prueba al catálogo de El Bosque Mágico siguiendo la arquitectura del proyecto"
+prompt = """
+Vas a añadir una prueba nueva a El Bosque Mágico de los Bichitos.
+
+Lee docs/adding-a-prueba.md entero y sigue esa receta al pie de la letra:
+dónde va el contenido nuevo (data.ts), cómo se escribe el generador
+(generators.ts, función pura que usa el `rng` inyectado, nunca
+Math.random()), cómo se registra la prueba en catalog.ts (GAMES + STICKERS),
+y cuándo hace falta un test propio además del barrido genérico que ya cubre
+cualquier prueba registrada.
+
+La idea de la prueba nueva es: {{args}}
+
+Si esa idea no está clara o falta información (qué pregunta hace la prueba,
+qué concepto trabaja), pregúntamelo antes de escribir código.
+
+Antes de terminar, ejecuta:
+npm run lint && npm run typecheck && npm test && npm run build
+No des la tarea por terminada si alguno de esos comandos falla — arréglalo
+primero. Actualiza también la tabla de pruebas en README.md.
+"""
