@@ -47,10 +47,20 @@ export function initialLetter(word: string): string {
 
 // --- 1. Letras iniciales -----------------------------------------------------
 
+/**
+ * Iniciales que de verdad estrenan alguna palabra del pool.
+ *
+ * Son las que sirven de distractor: una Ñ o una X junto a «Oruga» se
+ * descartan sin pensar, así que al subir de nivel la prueba se volvía **más
+ * fácil** en vez de más difícil. El alfabeto completo sigue haciendo falta
+ * para las pruebas donde la respuesta puede ser cualquier letra.
+ */
+const INITIALS = [...new Set(CRITTERS.map((critter) => initialLetter(critter.name)))];
+
 export const genLetters: RoundGenerator = (rng, tier = 0) => {
   const critter = pick(rng, CRITTERS);
   const answer = initialLetter(critter.name);
-  const others = sample(rng, ALPHABET.filter((l) => l !== answer), distractorCount(tier));
+  const others = sample(rng, INITIALS.filter((l) => l !== answer), distractorCount(tier));
 
   return {
     question: `¿Con qué letra empieza ${critter.name}?`,

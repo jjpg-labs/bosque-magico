@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest';
 import { seededRng } from '../lib/random';
 import { GAMES } from '../lib/games/catalog';
 import {
+  CRITTERS,
   EVERYDAY_OBJECTS,
   FINAL_LETTERS,
   FINAL_LETTER_WORDS,
@@ -364,6 +365,23 @@ describe('La Vocal Escondida', () => {
       const round = generate(seededRng(seed));
       for (const option of round.options) {
         expect(option.display.kind === 'text' && /^[AEIOU]$/.test(option.display.text)).toBe(true);
+      }
+    }
+  });
+});
+
+
+describe('Letras Iniciales: distractores plausibles', () => {
+  it('solo ofrece letras que estrenan alguna palabra del pool', () => {
+    // Una Ñ o una X junto a «Oruga» se descartan sin pensar: con distractores
+    // así, subir de nivel hacía la prueba más fácil en vez de más difícil.
+    const iniciales = new Set(CRITTERS.map((c) => initialLetter(c.name)));
+    const letters = GAMES.find((game) => game.id === 1)!.generate!;
+    for (const tier of [0, 1, 2, 3]) {
+      for (let seed = 1; seed <= 200; seed++) {
+        for (const option of letters(seededRng(seed), tier).options) {
+          expect(iniciales, `nivel ${tier}`).toContain(option.label);
+        }
       }
     }
   });
