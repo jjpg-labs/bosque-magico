@@ -164,6 +164,7 @@ export default function App() {
             onSpeak={speak}
             onComplete={handleComplete}
             tier={tierFor(progress, currentGame.id)}
+            completedIds={progress.completed}
             onNext={() => {
               const next = nextGameId(currentGame.id);
               if (next === undefined) goToMap();

@@ -22,7 +22,7 @@
  * su propio `generators/<mundo>.ts`; se promociona aquí más tarde, aparte.
  */
 
-import { numericDistractors, pick, randomInt, sample, shuffle } from '../../random';
+import { numericDistractors, pick, randomInt, sample, seededRng, shuffle } from '../../random';
 import type { Rng } from '../../random';
 import { buildOptions, textOption } from './options';
 import type { Option, Prompt, RoundGenerator } from '../types';
@@ -683,4 +683,31 @@ export function makeMixGenerator(pool: readonly RoundGenerator[]): RoundGenerato
     throw new Error('makeMixGenerator necesita al menos un generador en el pool');
   }
   return (rng, tier = 0) => pick(rng, pool)(rng, tier);
+}
+
+/**
+ * Semilla derivada de la fecha: la misma durante todo el día y distinta
+ * mañana. Es lo que hace que «La Aventura del Día» se pueda contar en la
+ * merienda («¡me ha salido la de las ranas!») y que rejugarla no la cambie.
+ */
+export function daySeed(date = new Date()): number {
+  return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+/**
+ * Como `makeMixGenerator`, pero con la aleatoriedad fijada al día: ignora a
+ * propósito el `rng` que recibe y usa el suyo, sembrado con la fecha.
+ *
+ * Cada llamada avanza ese `rng` interno, así que las rondas de una misma
+ * tanda salen distintas entre sí pero iguales en cada partida del mismo día.
+ */
+export function makeDailyGenerator(
+  pool: readonly RoundGenerator[],
+  date = new Date(),
+): RoundGenerator {
+  if (pool.length === 0) {
+    throw new Error('makeDailyGenerator necesita al menos un generador en el pool');
+  }
+  const daily = seededRng(daySeed(date));
+  return (_rng, tier = 0) => pick(daily, pool)(daily, tier);
 }

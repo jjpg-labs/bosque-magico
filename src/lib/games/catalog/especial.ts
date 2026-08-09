@@ -7,7 +7,7 @@
  * sola cada prueba nueva y no hay ninguna lista que mantener a mano.
  */
 
-import { makeMixGenerator } from '../generators';
+import { makeDailyGenerator, makeMixGenerator } from '../generators';
 import type { GameDefinition, Sticker } from '../types';
 
 export function especialGames(pool: readonly GameDefinition[]): readonly GameDefinition[] {
@@ -25,6 +25,23 @@ export function especialGames(pool: readonly GameDefinition[]): readonly GameDef
       roundsToWin: 5,
       generate: makeMixGenerator(generators),
     },
+    {
+      id: 101,
+      title: 'La Aventura del Día',
+      desc: 'Una aventura distinta cada día',
+      icon: '🗺️',
+      cat: 'Aventura',
+      world: 'especial',
+      kind: 'choice',
+      roundsToWin: 8,
+      // Solo mezcla lo que ya se ha superado: la aventura del día nunca saca
+      // una prueba que la niña todavía no ha visto.
+      generateFor: (completedIds) => {
+        const known = pool.filter((game) => completedIds.includes(game.id));
+        const source = known.length > 0 ? known : pool;
+        return makeDailyGenerator(source.flatMap((game) => game.generate ?? []));
+      },
+    },
   ];
 }
 
@@ -36,4 +53,5 @@ export const ESPECIAL_STICKERS: readonly Sticker[] = [
     bg: 'bg-yellow-200',
     color: 'text-yellow-700',
   },
+  { gameId: 101, name: 'Mapa del Tesoro', icon: '🗺️' },
 ];

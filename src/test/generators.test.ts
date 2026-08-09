@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { seededRng } from '../lib/random';
 import { GAMES } from '../lib/games/catalog';
 import {
@@ -14,7 +14,18 @@ import type { Round } from '../lib/games/types';
 /** Muchas semillas: los generadores son aleatorios y un solo caso no prueba nada. */
 const SEEDS = Array.from({ length: 200 }, (_, i) => i + 1);
 
-const CHOICE_GAMES = GAMES.filter((game) => game.generate !== undefined);
+/**
+ * Las pruebas que producen rondas, con su generador ya resuelto.
+ *
+ * «La Aventura del Día» no trae `generate` sino `generateFor`, porque su
+ * mezcla depende de lo que se lleve superado; aquí se le pasa el catálogo
+ * entero para que también la recorran las comprobaciones genéricas.
+ */
+const ALL_IDS = GAMES.map((game) => game.id);
+const CHOICE_GAMES = GAMES.flatMap((game) => {
+  const generate = game.generateFor ? game.generateFor(ALL_IDS) : game.generate;
+  return generate ? [{ ...game, generate }] : [];
+});
 
 function allRounds(): Round[] {
   return CHOICE_GAMES.flatMap((game) =>
@@ -65,7 +76,9 @@ describe('generadores de rondas', () => {
     expect(GAMES.length).toBeGreaterThanOrEqual(19);
     // La de memoria no usa generador; las demás sí. Ninguna debe quedar sin
     // implementar: en la versión original, 10 de 13 caían a un botón genérico.
-    const unimplemented = GAMES.filter((game) => game.kind === 'choice' && !game.generate);
+    const unimplemented = GAMES.filter(
+      (game) => game.kind === 'choice' && !game.generate && !game.generateFor,
+    );
     expect(unimplemented).toEqual([]);
   });
 
@@ -142,6 +155,9 @@ describe('generadores de rondas', () => {
   it('cada prueba produce variedad suficiente para no memorizarse', () => {
     for (const game of CHOICE_GAMES) {
       if (VARIETY_DEBT.has(game.id)) continue;
+      // «La Aventura del Día» es igual toda la jornada a propósito: su
+      // variedad no se mide por semilla sino por fecha, más abajo.
+      if (game.generateFor) continue;
       const cores = new Set(
         Array.from({ length: 800 }, (_, seed) => coreOf(game.generate!(seededRng(seed + 1), 0))),
       );
@@ -361,5 +377,60 @@ describe('La Rutina del Día', () => {
       expect(step).toBeDefined();
       expect(correct.display).toEqual({ kind: 'emoji', emoji: step.emoji });
     }
+  });
+});
+
+
+describe('La Aventura del Día', () => {
+  const aventura = GAMES.find((game) => game.id === 101)!;
+  const todos = GAMES.map((game) => game.id);
+
+  function rondasDe(fecha: Date, completadas: readonly number[] = todos): string[] {
+    vi.setSystemTime(fecha);
+    const rounds = generateRounds(aventura.generateFor!(completadas), seededRng(1), 8);
+    return rounds.map(coreOf);
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  it('es la misma aventura durante todo el día', () => {
+    // Se puede hablar de ella en la merienda y volver a jugarla igual.
+    const manana = rondasDe(new Date(2026, 7, 9, 9, 0));
+    const noche = rondasDe(new Date(2026, 7, 9, 20, 30));
+    expect(noche).toEqual(manana);
+  });
+
+  it('no depende de la semilla que le pasen, solo de la fecha', () => {
+    vi.setSystemTime(new Date(2026, 7, 9, 9, 0));
+    const conUna = generateRounds(aventura.generateFor!(todos), seededRng(1), 8).map(coreOf);
+    const conOtra = generateRounds(aventura.generateFor!(todos), seededRng(999), 8).map(coreOf);
+    expect(conOtra).toEqual(conUna);
+  });
+
+  it('cambia al día siguiente', () => {
+    const hoy = rondasDe(new Date(2026, 7, 9));
+    const manana = rondasDe(new Date(2026, 7, 10));
+    expect(manana).not.toEqual(hoy);
+  });
+
+  it('dentro de una misma aventura las rondas son distintas entre sí', () => {
+    const rondas = rondasDe(new Date(2026, 7, 9));
+    expect(new Set(rondas).size).toBe(rondas.length);
+  });
+
+  it('solo mezcla pruebas ya superadas', () => {
+    // Con una sola prueba superada, las ocho rondas salen todas de ella.
+    vi.setSystemTime(new Date(2026, 7, 9));
+    const soloColores = generateRounds(aventura.generateFor!([14]), seededRng(1), 8);
+    for (const ronda of soloColores) {
+      const esDeColores =
+        ronda.question.startsWith('Toca el color') || ronda.question.startsWith('¿De qué color');
+      expect(esDeColores, ronda.question).toBe(true);
+    }
+  });
+
+  it('sin nada superado todavía, mezcla el catálogo entero en vez de romperse', () => {
+    vi.setSystemTime(new Date(2026, 7, 9));
+    expect(() => generateRounds(aventura.generateFor!([]), seededRng(1), 8)).not.toThrow();
   });
 });

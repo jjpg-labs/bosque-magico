@@ -135,6 +135,14 @@ export interface GameDefinition {
   roundsToWin: number;
   /** Solo en juegos de tipo 'choice'. */
   generate?: RoundGenerator;
+  /**
+   * Generador que depende de lo que ya se ha superado, para las pruebas que
+   * remezclan el catálogo. Recibe los ids superados en vez del `Progress`
+   * entero para no crear un ciclo entre `types` y `progress`.
+   *
+   * Si está, manda sobre `generate`.
+   */
+  generateFor?: (completedIds: readonly number[]) => RoundGenerator;
   /** Solo en juegos de tipo 'memory'. */
   pairCount?: number;
 }
