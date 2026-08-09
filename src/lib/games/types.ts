@@ -2,6 +2,60 @@ import type { Rng } from '../random';
 
 export type ShapeName = 'círculo' | 'cuadrado' | 'triángulo' | 'estrella' | 'corazón' | 'rombo';
 
+/**
+ * Los mundos del mapa. Cada prueba pertenece exactamente a uno.
+ *
+ * El mapa dejó de ser una lista plana en cuanto el catálogo empezó a crecer:
+ * con cien pruebas en una sola rejilla no hay forma de encontrar «la de los
+ * animales» sin saber leer, y una única cadena de desbloqueo dejaría fuera de
+ * alcance todo lo que viniera detrás de una prueba que no apetezca.
+ */
+export type WorldId =
+  | 'letras'
+  | 'numeros'
+  | 'cuentas'
+  | 'formas'
+  | 'logica'
+  | 'medidas'
+  | 'natura'
+  | 'cuerpo'
+  | 'emociones'
+  | 'oficios'
+  | 'especial';
+
+/**
+ * Condición de apertura de un mundo.
+ *
+ * - `always`: abierto desde el primer día. Varios mundos lo son a la vez para
+ *   que siempre haya de dónde elegir.
+ * - `world`: hacen falta `count` pruebas superadas de otro mundo.
+ * - `total`: hacen falta `count` pruebas superadas en todo el catálogo
+ *   (fuera del propio mundo).
+ */
+export type WorldUnlock =
+  | { kind: 'always' }
+  | { kind: 'world'; world: WorldId; count: number }
+  | { kind: 'total'; count: number };
+
+export interface World {
+  id: WorldId;
+  /** Nombre largo, el que se pinta en la tarjeta y se lee en voz alta. */
+  name: string;
+  icon: string;
+  /** Una línea; se lee en voz alta al entrar en el mundo. */
+  desc: string;
+  /**
+   * Colores del mundo (clases de Tailwind). Las pegatinas que no traigan
+   * `bg`/`color` propios los heredan de aquí: con cien pegatinas no hay pares
+   * de color distinguibles para todas, y escribirlos a mano una a una es
+   * trabajo que no aporta nada.
+   */
+  bg: string;
+  color: string;
+  border: string;
+  unlock: WorldUnlock;
+}
+
 /** Lo que se muestra encima de las opciones. */
 export type Prompt =
   /** Las opciones ya contienen toda la información; no hay enunciado visual. */
@@ -60,7 +114,10 @@ export interface GameDefinition {
   title: string;
   desc: string;
   icon: string;
+  /** Etiqueta corta de la tarjeta del mapa: máximo 11 caracteres. */
   cat: string;
+  /** Mundo al que pertenece; determina dónde sale en el mapa y su color. */
+  world: WorldId;
   kind: GameKind;
   /** Rondas correctas necesarias para superar la prueba. */
   roundsToWin: number;
@@ -68,4 +125,19 @@ export interface GameDefinition {
   generate?: RoundGenerator;
   /** Solo en juegos de tipo 'memory'. */
   pairCount?: number;
+}
+
+export interface Sticker {
+  /** Coincide con el id de la prueba que la desbloquea. */
+  gameId: number;
+  name: string;
+  icon: string;
+  /**
+   * Colores propios. Opcionales a propósito: una pegatina que no los traiga
+   * hereda los de su mundo (ver `stickerStyle` en el catálogo). Con cien
+   * pegatinas no hay pares `bg-*`/`text-*` distinguibles para todas, y
+   * elegirlos a mano una a una es trabajo sin retorno.
+   */
+  bg?: string;
+  color?: string;
 }

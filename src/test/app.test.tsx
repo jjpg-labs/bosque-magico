@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
-import { GAMES, STICKERS } from '../lib/games/catalog';
+import { STICKERS, gamesOfWorld, populatedWorlds } from '../lib/games/catalog';
 import { ChoiceGame } from '../components/games/ChoiceGame';
 import { seededRng } from '../lib/random';
 import type { Round } from '../lib/games/types';
@@ -70,24 +70,54 @@ describe('ChoiceGame', () => {
   });
 });
 
+/** El mapa tiene dos niveles: hay que entrar en el mundo para ver sus pruebas. */
+async function openWorld(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(await screen.findByRole('button', { name: new RegExp(`^Mundo ${name}\\.`) }));
+}
+
 describe('App', () => {
-  it('muestra el mapa con todas las pruebas del catálogo', async () => {
+  it('muestra el mapa con un mundo por cada grupo de pruebas', async () => {
     render(<App />);
     expect(await screen.findByText('¡El Mapa del Bosque! 🌳')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^Prueba \d+:/ })).toHaveLength(GAMES.length);
+    expect(screen.getAllByRole('button', { name: /^Mundo / })).toHaveLength(populatedWorlds().length);
+    // Las pruebas no se pintan hasta entrar en un mundo.
+    expect(screen.queryByRole('button', { name: /^Prueba \d+:/ })).not.toBeInTheDocument();
   });
 
-  it('empieza sin pegatinas y solo con la primera prueba abierta', async () => {
+  it('al entrar en un mundo enseña solo las pruebas de ese mundo', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openWorld(user, 'El Claro de las Letras');
+    expect(screen.getAllByRole('button', { name: /^Prueba \d+:/ })).toHaveLength(
+      gamesOfWorld('letras').length,
+    );
+  });
+
+  it('empieza sin pegatinas y solo con la primera prueba de cada mundo abierta', async () => {
+    const user = userEvent.setup();
     render(<App />);
 
     expect(
       await screen.findByRole('button', { name: `Álbum (0/${STICKERS.length})` }),
     ).toBeInTheDocument();
+
+    await openWorld(user, 'El Claro de las Letras');
     expect(screen.getByRole('button', { name: /^Prueba 1:.*Disponible$/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /^Prueba 2:.*Bloqueada$/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Prueba 11:.*Bloqueada$/ })).toBeDisabled();
+  });
+
+  it('deja jugar en varios mundos a la vez sin haber terminado ninguno', async () => {
+    // Lo que arregla el desbloqueo por mundos: la prueba 2 ya no depende de la 1.
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openWorld(user, 'El Río de los Números');
+    expect(screen.getByRole('button', { name: /^Prueba 2:.*Disponible$/ })).toBeEnabled();
   });
 
   it('recupera el progreso guardado al arrancar', async () => {
+    const user = userEvent.setup();
     localStorage.setItem(
       'bosque_magico_progress_v2',
       JSON.stringify({ version: 2, completed: [1, 2] }),
@@ -98,7 +128,9 @@ describe('App', () => {
     expect(
       await screen.findByRole('button', { name: `Álbum (2/${STICKERS.length})` }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Prueba 3:.*Disponible$/ })).toBeEnabled();
+
+    await openWorld(user, 'El Claro de las Letras');
+    expect(screen.getByRole('button', { name: /^Prueba 11:.*Disponible$/ })).toBeEnabled();
   });
 
   it('el álbum solo enseña las pegatinas ganadas', async () => {

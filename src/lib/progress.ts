@@ -10,7 +10,16 @@
  * regalando pegatinas no ganadas.
  */
 
-import { GAME_IDS } from './games/catalog';
+import { unhandled } from './exhaustive';
+import {
+  GAMES,
+  GAME_IDS,
+  findGame,
+  findWorld,
+  gamesOfWorld,
+  populatedWorlds,
+} from './games/catalog';
+import type { World, WorldId } from './games/types';
 
 const STORAGE_KEY = 'bosque_magico_progress_v2';
 const LEGACY_KEY = 'bosque_bichitos_progress';
@@ -114,9 +123,109 @@ export function resetProgress(storage: Storage | undefined = safeStorage()): Pro
   return emptyProgress;
 }
 
-/** Una prueba se desbloquea al superar la anterior. La primera siempre está abierta. */
+/**
+ * ¿Está abierto el mundo?
+ *
+ * El requisito se recorta a las pruebas que existen de verdad
+ * (`Math.min(...)`): los mundos se dimensionaron para un catálogo de cien
+ * pruebas, así que mientras se va llenando por fases hay mundos con menos
+ * pruebas de las que pide la condición y, sin el recorte, quedarían cerrados
+ * para siempre.
+ */
+export function isWorldUnlocked(progress: Progress, worldId: WorldId): boolean {
+  const world = findWorld(worldId);
+  if (!world) return false;
+
+  const { unlock } = world;
+  switch (unlock.kind) {
+    case 'always':
+      return true;
+
+    case 'world': {
+      const source = gamesOfWorld(unlock.world);
+      const done = source.filter((game) => progress.completed.includes(game.id)).length;
+      return done >= Math.min(unlock.count, source.length);
+    }
+
+    case 'total': {
+      const outside = GAMES.filter((game) => game.world !== worldId);
+      const done = outside.filter((game) => progress.completed.includes(game.id)).length;
+      return done >= Math.min(unlock.count, outside.length);
+    }
+
+    default:
+      return unhandled(unlock) ?? false;
+  }
+}
+
+/**
+ * Una prueba está abierta si su mundo lo está y ya se superó la prueba
+ * anterior **de ese mismo mundo**. La primera de cada mundo siempre está
+ * abierta.
+ *
+ * Antes era una única cadena: la prueba N exigía la N-1 del catálogo entero.
+ * Con cien pruebas eso significa que una que no apetezca deja fuera de alcance
+ * todas las siguientes. Ahora las cadenas son cortas y hay cuatro mundos
+ * abiertos a la vez.
+ */
 export function isUnlocked(progress: Progress, gameId: number): boolean {
-  return gameId === 1 || progress.completed.includes(gameId - 1);
+  // Lo ya superado no se vuelve a cerrar nunca, pase lo que pase con las
+  // condiciones de los mundos: quitarle acceso a algo que ya se ganó sería
+  // incomprensible desde el otro lado de la pantalla.
+  if (progress.completed.includes(gameId)) return true;
+
+  const game = findGame(gameId);
+  if (!game) return false;
+  if (!isWorldUnlocked(progress, game.world)) return false;
+
+  const siblings = gamesOfWorld(game.world);
+  const index = siblings.findIndex((sibling) => sibling.id === gameId);
+  if (index <= 0) return true;
+  return progress.completed.includes(siblings[index - 1].id);
+}
+
+export interface WorldProgress {
+  world: World;
+  /** Pruebas que tiene el mundo hoy. */
+  total: number;
+  /** Cuántas de ellas están superadas. */
+  completed: number;
+  unlocked: boolean;
+  /** Mundo entero superado: es lo que da derecho a su medalla. */
+  done: boolean;
+}
+
+export function worldProgress(progress: Progress, worldId: WorldId): WorldProgress | undefined {
+  const world = findWorld(worldId);
+  if (!world) return undefined;
+
+  const games = gamesOfWorld(worldId);
+  const completed = games.filter((game) => progress.completed.includes(game.id)).length;
+  return {
+    world,
+    total: games.length,
+    completed,
+    unlocked: isWorldUnlocked(progress, worldId),
+    done: games.length > 0 && completed === games.length,
+  };
+}
+
+/** El progreso de cada mundo que tenga pruebas, en el orden del mapa. */
+export function allWorldProgress(progress: Progress): WorldProgress[] {
+  return populatedWorlds()
+    .map((world) => worldProgress(progress, world.id))
+    .filter((entry): entry is WorldProgress => entry !== undefined);
+}
+
+/**
+ * El mundo «en curso»: el primero abierto que aún no está terminado. Es el que
+ * el mapa pone el primero para poder seguir por donde iba sin buscar.
+ */
+export function currentWorldId(progress: Progress): WorldId | undefined {
+  const worlds = allWorldProgress(progress);
+  const started = worlds.find((entry) => entry.unlocked && entry.completed > 0 && !entry.done);
+  const pending = worlds.find((entry) => entry.unlocked && !entry.done);
+  return (started ?? pending)?.world.id;
 }
 
 /** La pegatina N se gana superando la prueba N. */
