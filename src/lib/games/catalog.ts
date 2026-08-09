@@ -4,7 +4,6 @@ import {
   genColors,
   genCount,
   genEmotion,
-  genFinalChallenge,
   genLetters,
   genMoreLess,
   genNumberSequence,
@@ -17,8 +16,9 @@ import {
   genShapes,
   genSize,
   genSub,
+  makeMixGenerator,
 } from './generators';
-import type { GameDefinition, Sticker, World, WorldId } from './types';
+import type { GameDefinition, RoundGenerator, Sticker, World, WorldId } from './types';
 
 /**
  * Los mundos del mapa, en el orden en que se pintan.
@@ -144,8 +144,11 @@ export function findWorld(id: WorldId): World | undefined {
   return WORLDS.find((world) => world.id === id);
 }
 
-/** Las 19 pruebas, ordenadas por id. El orden del mapa lo pone `WORLDS`. */
-export const GAMES: readonly GameDefinition[] = [
+/**
+ * Las pruebas con contenido propio. Las de remezcla se construyen aparte,
+ * porque su generador se deriva justo de estas.
+ */
+const CONTENT_GAMES: readonly GameDefinition[] = [
   {
     id: 1,
     title: 'Letras Iniciales',
@@ -279,17 +282,6 @@ export const GAMES: readonly GameDefinition[] = [
     generate: genShapeMatch,
   },
   {
-    id: 13,
-    title: 'El Gran Desafío Final',
-    desc: 'Prueba combinada para ganar el trofeo',
-    icon: '🏆',
-    cat: 'Especial',
-    world: 'especial',
-    kind: 'choice',
-    roundsToWin: 5,
-    generate: genFinalChallenge,
-  },
-  {
     id: 14,
     title: 'Colores del Bosque',
     desc: 'Descubre y toca cada color',
@@ -356,6 +348,32 @@ export const GAMES: readonly GameDefinition[] = [
     generate: genRoutine,
   },
 ];
+
+/**
+ * El desafío final remezcla los generadores de las demás pruebas, derivados
+ * del propio catálogo: así entra automáticamente cada prueba nueva sin tener
+ * que acordarse de añadirla a ninguna lista.
+ */
+const MIX_POOL: readonly RoundGenerator[] = CONTENT_GAMES.flatMap((game) => game.generate ?? []);
+
+const MIX_GAMES: readonly GameDefinition[] = [
+  {
+    id: 13,
+    title: 'El Gran Desafío Final',
+    desc: 'Prueba combinada para ganar el trofeo',
+    icon: '🏆',
+    cat: 'Especial',
+    world: 'especial',
+    kind: 'choice',
+    roundsToWin: 5,
+    generate: makeMixGenerator(MIX_POOL),
+  },
+];
+
+/** Las 19 pruebas, ordenadas por id. El orden del mapa lo pone `WORLDS`. */
+export const GAMES: readonly GameDefinition[] = [...CONTENT_GAMES, ...MIX_GAMES].sort(
+  (a, b) => a.id - b.id,
+);
 
 /**
  * Los ids que existen de verdad, para validar el progreso guardado.

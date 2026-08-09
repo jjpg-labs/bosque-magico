@@ -454,32 +454,31 @@ export const genRoutine: RoundGenerator = (rng) => {
   };
 };
 
-// --- 13. El gran desafío final ----------------------------------------------
+// --- Pruebas de remezcla (el gran desafío final) -----------------------------
 
-const CHALLENGE_POOL: readonly RoundGenerator[] = [
-  genLetters,
-  genCount,
-  genAdd,
-  genSub,
-  genShapes,
-  genPatterns,
-  genOddOne,
-  genMoreLess,
-  genNumberSequence,
-  genPhonics,
-  genShapeMatch,
-  genColors,
-  genAnimalSound,
-  genEmotion,
-  genRhyme,
-  genSize,
-  genRoutine,
-];
-
-// El `tier` se propaga al generador elegido: sin esto, el desafío final era
-// la única prueba que nunca subía de dificultad por muchas veces que se jugara.
-export const genFinalChallenge: RoundGenerator = (rng, tier = 0) =>
-  pick(rng, CHALLENGE_POOL)(rng, tier);
+/**
+ * Un generador que, en cada ronda, plantea el ejercicio de otra prueba.
+ *
+ * Antes el pool era una lista escrita a mano con los diecisiete generadores
+ * del momento. Con cien pruebas serían noventa y nueve entradas que nadie va a
+ * acordarse de actualizar: el desafío «final» acabaría remezclando solo las
+ * pruebas viejas. Recibiendo el pool por parámetro, el catálogo se lo pasa
+ * derivado de sí mismo y no hay nada que mantener sincronizado.
+ *
+ * El `tier` se propaga al generador elegido: sin eso, la prueba de remezcla
+ * sería la única que nunca sube de dificultad por muchas veces que se juegue.
+ *
+ * ```ts
+ * // en catalog.ts, con el pool derivado de las demás pruebas
+ * generate: makeMixGenerator(CONTENT_GAMES.flatMap((g) => g.generate ?? [])),
+ * ```
+ */
+export function makeMixGenerator(pool: readonly RoundGenerator[]): RoundGenerator {
+  if (pool.length === 0) {
+    throw new Error('makeMixGenerator necesita al menos un generador en el pool');
+  }
+  return (rng, tier = 0) => pick(rng, pool)(rng, tier);
+}
 
 /**
  * Identifica un ejercicio concreto, no solo su enunciado.

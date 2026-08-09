@@ -3,7 +3,7 @@ import { PromptView } from './PromptView';
 import { Shape } from './Shape';
 import { playSound } from '../lib/audio';
 import { unhandled } from '../lib/exhaustive';
-import { GAMES } from '../lib/games/catalog';
+import { GAMES, populatedWorlds } from '../lib/games/catalog';
 import { generateRounds } from '../lib/games/generators';
 import { defaultRng } from '../lib/random';
 import type { Option } from '../lib/games/types';
@@ -63,11 +63,22 @@ export function PrintableWorksheets({ onBack }: PrintableWorksheetsProps) {
             onChange={(event) => setGameId(Number(event.target.value))}
             className="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm font-bold bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-400"
           >
-            {PRINTABLE_GAMES.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.id}. {g.title}
-              </option>
-            ))}
+            {/* Agrupado por mundo: una lista plana de cien opciones es
+                inmanejable para encontrar la ficha que se busca. */}
+            {populatedWorlds().map((world) => {
+              const games = PRINTABLE_GAMES.filter((g) => g.world === world.id);
+              if (games.length === 0) return null;
+
+              return (
+                <optgroup key={world.id} label={world.name}>
+                  {games.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.id}. {g.title}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
           </select>
 
           <button
