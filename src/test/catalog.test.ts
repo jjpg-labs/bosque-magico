@@ -66,10 +66,18 @@ describe('nextGameId', () => {
   });
 
   it('se salta los mundos que todavía no tienen pruebas', () => {
-    // «natura» solo tiene una prueba y los dos mundos siguientes con
-    // contenido no son el inmediato del orden de WORLDS.
-    const siguiente = nextGameId(gamesOfWorld('natura')[0].id);
-    expect(siguiente).toBe(gamesOfWorld('emociones')[0].id);
+    // No se fija en dos mundos concretos a propósito: el catálogo se llena por
+    // fases y un mundo que hoy está vacío tendrá pruebas mañana. Lo que debe
+    // cumplirse siempre es que la cadena solo pase por mundos con contenido.
+    const poblados = populatedWorlds();
+    for (const [indice, mundo] of poblados.entries()) {
+      const pruebas = gamesOfWorld(mundo.id);
+      const siguiente = nextGameId(pruebas[pruebas.length - 1].id);
+      const esperado = poblados[indice + 1];
+      expect(siguiente, mundo.name).toBe(
+        esperado ? gamesOfWorld(esperado.id)[0].id : undefined,
+      );
+    }
   });
 
   it('devuelve undefined en la última prueba del catálogo', () => {

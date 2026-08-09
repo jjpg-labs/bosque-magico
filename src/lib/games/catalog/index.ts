@@ -7,6 +7,7 @@
  */
 
 import { CUENTAS_GAMES, CUENTAS_STICKERS } from './cuentas';
+import { CUERPO_GAMES, CUERPO_STICKERS } from './cuerpo';
 import { EMOCIONES_GAMES, EMOCIONES_STICKERS } from './emociones';
 import { ESPECIAL_STICKERS, especialGames } from './especial';
 import { FORMAS_GAMES, FORMAS_STICKERS } from './formas';
@@ -15,6 +16,7 @@ import { LOGICA_GAMES, LOGICA_STICKERS } from './logica';
 import { MEDIDAS_GAMES, MEDIDAS_STICKERS } from './medidas';
 import { NATURA_GAMES, NATURA_STICKERS } from './natura';
 import { NUMEROS_GAMES, NUMEROS_STICKERS } from './numeros';
+import { OFICIOS_GAMES, OFICIOS_STICKERS } from './oficios';
 import { WORLDS, findWorld } from './worlds';
 import type { GameDefinition, Sticker, World, WorldId } from '../types';
 
@@ -37,7 +39,9 @@ const CONTENT_GAMES: readonly GameDefinition[] = [
   ...LOGICA_GAMES,
   ...MEDIDAS_GAMES,
   ...NATURA_GAMES,
+  ...CUERPO_GAMES,
   ...EMOCIONES_GAMES,
+  ...OFICIOS_GAMES,
 ].sort((a, b) => a.id - b.id);
 
 /**
@@ -114,7 +118,9 @@ export const STICKERS: readonly Sticker[] = [
   ...LOGICA_STICKERS,
   ...MEDIDAS_STICKERS,
   ...NATURA_STICKERS,
+  ...CUERPO_STICKERS,
   ...EMOCIONES_STICKERS,
+  ...OFICIOS_STICKERS,
   ...ESPECIAL_STICKERS,
 ].sort((a, b) => a.gameId - b.gameId);
 

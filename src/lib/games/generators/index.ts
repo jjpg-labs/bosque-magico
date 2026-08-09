@@ -26,4 +26,6 @@ export * from './formas';
 export * from './logica';
 export * from './medidas';
 export * from './natura';
+export * from './cuerpo';
+export * from './oficios';
 export * from './emociones';
