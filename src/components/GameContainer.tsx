@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GirlAvatar } from './GirlAvatar';
 import { ChoiceGame } from './games/ChoiceGame';
+import { MarathonGame } from './games/MarathonGame';
 import { MemoryGame } from './games/MemoryGame';
 import { playSound } from '../lib/audio';
 import { nextGameId } from '../lib/games/catalog';
@@ -16,6 +17,10 @@ interface GameContainerProps {
   tier?: number;
   /** Pruebas ya superadas, para las que remezclan el catálogo (`generateFor`). */
   completedIds?: readonly number[];
+  /** Mejor marca de la maratón, para poder superarla. */
+  bestMarathon?: number;
+  /** Se llama al salir de la maratón, con los aciertos de esa tanda. */
+  onRecord?: (hits: number) => void;
 }
 
 export function GameContainer({
@@ -26,6 +31,8 @@ export function GameContainer({
   onNext,
   tier = 0,
   completedIds = [],
+  bestMarathon = 0,
+  onRecord = () => {},
 }: GameContainerProps) {
   const [passed, setPassed] = useState(false);
 
@@ -123,6 +130,17 @@ export function GameContainer({
               </button>
             </div>
           </div>
+        ) : game.kind === 'marathon' && generate ? (
+          <MarathonGame
+            key={game.id}
+            generate={generate}
+            roundsToWin={game.roundsToWin}
+            onSpeak={onSpeak}
+            onWin={handleWin}
+            onExit={onBack}
+            best={bestMarathon}
+            onRecord={onRecord}
+          />
         ) : game.kind === 'memory' ? (
           <MemoryGame
             pairCount={game.pairCount ?? 4}

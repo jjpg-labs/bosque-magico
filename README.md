@@ -15,13 +15,13 @@ app en el móvil o la tablet y funciona sin conexión.
 Cada prueba del mapa plantea **preguntas generadas al azar**: la abeja no siempre
 empieza por la misma letra ni hay siempre cinco mariquitas, así que no se puede
 aprobar memorizando dónde está el botón bueno. Al superar las rondas de una prueba
-se gana su pegatina y se abre la siguiente de su mundo.
+se gana su pegatina y avanza la ventana de pruebas abiertas de su mundo.
 
 El mapa se navega en **dos niveles**: primero los mundos, y al tocar uno, sus
 pruebas. Cuatro mundos están abiertos desde el primer día y los demás se van
-abriendo con el juego, así que siempre hay varias pruebas disponibles a la vez y
-nunca se queda atascada detrás de una que no le apetezca ese día. El mundo en el
-que iba aparece el primero y marcado.
+abriendo con el juego. Dentro de cada mundo hay **tres pruebas abiertas a la vez**,
+así que nunca se queda atascada detrás de una que no le apetezca ese día. El mundo en
+el que iba aparece el primero y marcado.
 
 Todas las instrucciones se **leen en voz alta** (síntesis de voz del navegador, en
 español), porque a esa edad todavía no se lee. El botón 🔊 las repite.
@@ -43,12 +43,16 @@ según va creciendo quien juega.
 | 🧒 La Casa de los Peques     | Cuerpo, sentidos, comida e higiene                   |       8 | 3 pruebas de animales |
 | 💛 La Plaza de las Emociones | Emociones, convivencia y música                      |       6 | siempre abierto       |
 | 🚂 La Ciudad de los Oficios  | Oficios, transportes y el pueblo                     |       4 | 3 pruebas de la casa  |
-| 🏆 La Torre del Trofeo       | Desafío combinado y **La Aventura del Día**          |       2 | 20 pruebas en total   |
+| 🏆 La Torre del Trofeo       | Desafío combinado y los dos modos sin fin            |       3 | 20 pruebas en total   |
 
-**La Aventura del Día** son ocho rondas que mezclan las pruebas ya superadas, con la
-aleatoriedad sembrada con la fecha: la misma aventura durante todo el día —se puede
-contar en la merienda y volver a jugarla igual— y distinta mañana. Es lo que hace que
-el juego no se acabe cuando se acaba el catálogo.
+Los dos modos de la torre son lo que hace que el juego no se acabe cuando se acaba el
+catálogo:
+
+- **La Aventura del Día**: ocho rondas que mezclan las pruebas ya superadas, con la
+  aleatoriedad sembrada con la fecha. La misma aventura durante todo el día —se puede
+  contar en la merienda y volver a jugarla igual— y distinta mañana.
+- **Maratón Amable**: rondas sin fin, con el contador de aciertos y el récord a
+  batir. **No se pierde nunca** y se sale cuando se quiere; un fallo no resta.
 
 Las condiciones de apertura se recortan a las pruebas que existen de verdad, así que
 ningún mundo queda cerrado por su propia condición, y un mundo sin pruebas todavía no

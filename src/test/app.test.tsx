@@ -94,7 +94,7 @@ describe('App', () => {
     );
   });
 
-  it('empieza sin pegatinas y solo con la primera prueba de cada mundo abierta', async () => {
+  it('empieza sin pegatinas y con las tres primeras pruebas del mundo abiertas', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -103,8 +103,9 @@ describe('App', () => {
     ).toBeInTheDocument();
 
     await openWorld(user, 'El Claro de las Letras');
+    const disponibles = screen.getAllByRole('button', { name: /^Prueba \d+:.*Disponible$/ });
+    expect(disponibles).toHaveLength(3);
     expect(screen.getByRole('button', { name: /^Prueba 1:.*Disponible$/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /^Prueba 11:.*Bloqueada$/ })).toBeDisabled();
   });
 
   it('deja jugar en varios mundos a la vez sin haber terminado ninguno', async () => {

@@ -9,6 +9,7 @@ import {
   isWorldUnlocked,
   loadProgress,
   markCompleted,
+  recordMarathon,
   resetProgress,
   saveProgress,
   tierFor,
@@ -18,7 +19,7 @@ import type { Progress } from '../lib/progress';
 import { GAMES, WORLDS, gamesOfWorld, populatedWorlds } from '../lib/games/catalog';
 
 function progressWith(completed: number[], playCounts: Record<number, number> = {}): Progress {
-  return { completed, playCounts };
+  return { completed, playCounts, bestMarathon: 0 };
 }
 
 /** Todas las pruebas de los mundos indicados, para dar por hecho un mundo entero. */
@@ -71,11 +72,29 @@ describe('desbloqueo de pruebas', () => {
     }
   });
 
-  it('dentro de un mundo, cada prueba exige la anterior de ese mundo', () => {
-    const [primera, segunda, tercera] = gamesOfWorld('letras');
-    expect(isUnlocked(emptyProgress, segunda.id)).toBe(false);
-    expect(isUnlocked(progressWith([primera.id]), segunda.id)).toBe(true);
-    expect(isUnlocked(progressWith([primera.id]), tercera.id)).toBe(false);
+  it('dentro de un mundo hay tres pruebas abiertas a la vez', () => {
+    const letras = gamesOfWorld('letras');
+    // Sin nada superado ya se puede elegir entre las tres primeras: si una no
+    // le gusta o no le sale, no se queda encallada ahí.
+    expect(isUnlocked(emptyProgress, letras[0].id)).toBe(true);
+    expect(isUnlocked(emptyProgress, letras[1].id)).toBe(true);
+    expect(isUnlocked(emptyProgress, letras[2].id)).toBe(true);
+    expect(isUnlocked(emptyProgress, letras[3].id)).toBe(false);
+  });
+
+  it('la ventana avanza al superar pruebas, sin importar cuál', () => {
+    const letras = gamesOfWorld('letras');
+    // Se salta la primera y supera la segunda: la ventana avanza igual.
+    const saltando = progressWith([letras[1].id]);
+    expect(isUnlocked(saltando, letras[3].id)).toBe(true);
+    expect(isUnlocked(saltando, letras[4].id)).toBe(false);
+  });
+
+  it('no abre pruebas de un mundo que sigue cerrado', () => {
+    // La ventana es dentro del mundo; no se salta la condición del mundo.
+    for (const game of gamesOfWorld('cuentas').slice(0, 3)) {
+      expect(isUnlocked(emptyProgress, game.id)).toBe(false);
+    }
   });
 
   it('las cadenas ya no cruzan de un mundo a otro', () => {
@@ -189,6 +208,38 @@ describe('dificultad escalonada', () => {
   });
 });
 
+describe('récord de la maratón', () => {
+  it('empieza a cero y solo guarda la marca si mejora', () => {
+    expect(emptyProgress.bestMarathon).toBe(0);
+    const primera = recordMarathon(emptyProgress, 7);
+    expect(primera.bestMarathon).toBe(7);
+    // Una tanda peor no borra la buena, y devuelve el mismo objeto.
+    const peor = recordMarathon(primera, 3);
+    expect(peor).toBe(primera);
+    expect(recordMarathon(primera, 9).bestMarathon).toBe(9);
+  });
+
+  it('sobrevive a una recarga', () => {
+    localStorage.clear();
+    saveProgress(recordMarathon(progressWith([1]), 12), localStorage);
+    expect(loadProgress(localStorage).bestMarathon).toBe(12);
+  });
+
+  it('un progreso guardado antes de que existiera la maratón se lee como cero', () => {
+    // Migración aditiva, igual que en su día con playCounts: nada de subir la
+    // versión del almacenamiento ni de perder lo que ya había.
+    localStorage.clear();
+    localStorage.setItem(
+      'bosque_magico_progress_v2',
+      JSON.stringify({ version: 2, completed: [1, 2], playCounts: { 1: 3 } }),
+    );
+    const cargado = loadProgress(localStorage);
+    expect(cargado.bestMarathon).toBe(0);
+    expect(cargado.completed).toEqual([1, 2]);
+    expect(cargado.playCounts).toEqual({ 1: 3 });
+  });
+});
+
 describe('persistencia', () => {
   beforeEach(() => localStorage.clear());
 
@@ -238,7 +289,7 @@ describe('persistencia', () => {
     // pegatinas ganadas al recargar.
     const completed = GAMES.map((g) => g.id);
     const playCounts = Object.fromEntries(GAMES.map((g) => [g.id, 4]));
-    saveProgress({ completed, playCounts }, localStorage);
+    saveProgress({ completed, playCounts, bestMarathon: 0 }, localStorage);
 
     const loaded = loadProgress(localStorage);
     expect(loaded.completed).toEqual(completed);

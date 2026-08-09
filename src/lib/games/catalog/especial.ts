@@ -42,6 +42,22 @@ export function especialGames(pool: readonly GameDefinition[]): readonly GameDef
         return makeDailyGenerator(source.flatMap((game) => game.generate ?? []));
       },
     },
+    {
+      id: 102,
+      title: 'Maratón Amable',
+      desc: 'Rondas sin fin. Se sale cuando quieras',
+      icon: '🏃',
+      cat: 'Maratón',
+      world: 'especial',
+      kind: 'marathon',
+      // Aciertos para la pegatina; a partir de ahí se sigue por gusto.
+      roundsToWin: 5,
+      generateFor: (completedIds) => {
+        const known = pool.filter((game) => completedIds.includes(game.id));
+        const source = known.length > 0 ? known : pool;
+        return makeMixGenerator(source.flatMap((game) => game.generate ?? []));
+      },
+    },
   ];
 }
 
@@ -54,4 +70,5 @@ export const ESPECIAL_STICKERS: readonly Sticker[] = [
     color: 'text-yellow-700',
   },
   { gameId: 101, name: 'Mapa del Tesoro', icon: '🗺️' },
+  { gameId: 102, name: 'Zapatillas Incansables', icon: '👟' },
 ];

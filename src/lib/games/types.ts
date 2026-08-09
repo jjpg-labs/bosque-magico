@@ -143,7 +143,7 @@ export interface MemoryCard {
   label: string;
 }
 
-export type GameKind = 'choice' | 'memory';
+export type GameKind = 'choice' | 'memory' | 'marathon';
 
 export interface GameDefinition {
   id: number;

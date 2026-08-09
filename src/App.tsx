@@ -17,6 +17,7 @@ import {
   incrementPlayCount,
   loadProgress,
   markCompleted,
+  recordMarathon,
   resetProgress,
   saveProgress,
   tierFor,
@@ -55,6 +56,16 @@ export default function App() {
       playSound('win');
       celebrate();
       setReward(stickerFor(gameId) ?? null);
+    },
+    [progress],
+  );
+
+  const handleRecord = useCallback(
+    (hits: number) => {
+      const next = recordMarathon(progress, hits);
+      if (next === progress) return;
+      setProgress(next);
+      saveProgress(next);
     },
     [progress],
   );
@@ -165,6 +176,8 @@ export default function App() {
             onComplete={handleComplete}
             tier={tierFor(progress, currentGame.id)}
             completedIds={progress.completed}
+            bestMarathon={progress.bestMarathon}
+            onRecord={handleRecord}
             onNext={() => {
               const next = nextGameId(currentGame.id);
               if (next === undefined) goToMap();

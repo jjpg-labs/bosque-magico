@@ -28,9 +28,11 @@ export interface Progress {
   completed: number[];
   /** Veces que se ha empezado cada prueba. Ausente/vacío en progreso migrado de v2. */
   playCounts: Record<number, number>;
+  /** Aciertos de la mejor maratón. Ausente en progreso guardado antes de que existiera. */
+  bestMarathon: number;
 }
 
-export const emptyProgress: Progress = { completed: [], playCounts: {} };
+export const emptyProgress: Progress = { completed: [], playCounts: {}, bestMarathon: 0 };
 
 function sanitize(ids: unknown): number[] {
   if (!Array.isArray(ids)) return [];
@@ -61,7 +63,9 @@ export function loadProgress(storage: Storage | undefined = safeStorage()): Prog
       // Esquema v2 no tenía playCounts: se migra a {} de forma aditiva, igual
       // que en su día se migró el formato de un solo fichero HTML.
       const playCounts = sanitizePlayCounts((parsed as { playCounts?: unknown } | null)?.playCounts);
-      return { completed, playCounts };
+      const raw2 = (parsed as { bestMarathon?: unknown } | null)?.bestMarathon;
+      const bestMarathon = typeof raw2 === 'number' && raw2 >= 0 ? Math.floor(raw2) : 0;
+      return { completed, playCounts, bestMarathon };
     }
 
     // Migración desde el formato de la versión de un solo fichero HTML.
@@ -69,7 +73,7 @@ export function loadProgress(storage: Storage | undefined = safeStorage()): Prog
     if (legacy) {
       const parsed: unknown = JSON.parse(legacy);
       const completed = sanitize((parsed as { completed?: unknown } | null)?.completed);
-      const migrated = { completed, playCounts: {} };
+      const migrated = { completed, playCounts: {}, bestMarathon: 0 };
       saveProgress(migrated, storage);
       return migrated;
     }
@@ -85,7 +89,12 @@ export function saveProgress(progress: Progress, storage: Storage | undefined = 
   try {
     storage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ version: 2, completed: progress.completed, playCounts: progress.playCounts }),
+      JSON.stringify({
+        version: 2,
+        completed: progress.completed,
+        playCounts: progress.playCounts,
+        bestMarathon: progress.bestMarathon,
+      }),
     );
   } catch {
     // Cuota llena o modo privado: el progreso se pierde al recargar, pero la
@@ -106,6 +115,12 @@ export function incrementPlayCount(progress: Progress, gameId: number): Progress
 export function tierFor(progress: Progress, gameId: number): number {
   const plays = progress.playCounts[gameId] ?? 0;
   return Math.min(Math.floor(plays / 3), 2);
+}
+
+/** Guarda la marca solo si mejora la anterior. */
+export function recordMarathon(progress: Progress, hits: number): Progress {
+  if (hits <= progress.bestMarathon) return progress;
+  return { ...progress, bestMarathon: hits };
 }
 
 export function markCompleted(progress: Progress, gameId: number): Progress {
@@ -159,14 +174,19 @@ export function isWorldUnlocked(progress: Progress, worldId: WorldId): boolean {
 }
 
 /**
- * Una prueba está abierta si su mundo lo está y ya se superó la prueba
- * anterior **de ese mismo mundo**. La primera de cada mundo siempre está
- * abierta.
+ * Cuántas pruebas de un mundo están abiertas a la vez por delante de lo
+ * superado. Tres deja margen para saltarse una que no apetece hoy sin perder
+ * la sensación de ir avanzando en orden.
+ */
+const OPEN_AHEAD = 3;
+
+/**
+ * Una prueba está abierta si su mundo lo está y entra en la ventana de las
+ * tres siguientes a lo que se lleva superado **de ese mismo mundo**.
  *
- * Antes era una única cadena: la prueba N exigía la N-1 del catálogo entero.
- * Con cien pruebas eso significa que una que no apetezca deja fuera de alcance
- * todas las siguientes. Ahora las cadenas son cortas y hay cuatro mundos
- * abiertos a la vez.
+ * Al principio era una única cadena para el catálogo entero: la prueba N
+ * exigía la N-1. Con cien pruebas, una que no apetezca deja fuera de alcance
+ * todas las siguientes.
  */
 export function isUnlocked(progress: Progress, gameId: number): boolean {
   // Lo ya superado no se vuelve a cerrar nunca, pase lo que pase con las
@@ -181,7 +201,18 @@ export function isUnlocked(progress: Progress, gameId: number): boolean {
   const siblings = gamesOfWorld(game.world);
   const index = siblings.findIndex((sibling) => sibling.id === gameId);
   if (index <= 0) return true;
-  return progress.completed.includes(siblings[index - 1].id);
+
+  // Dentro de un mundo no hay una cadena de un solo eslabón, sino una ventana
+  // de `OPEN_AHEAD` pruebas abiertas por delante de lo que se lleva superado.
+  //
+  // Con mundos de hasta catorce pruebas, la cadena estricta reproducía a
+  // pequeña escala justo el problema que los mundos venían a resolver: una
+  // prueba que no le gusta —o que ese día no le sale— dejaba las trece
+  // siguientes fuera de alcance. Con la ventana siempre puede saltarse un par
+  // y volver luego, y el orden se sigue notando porque la ventana avanza a
+  // medida que supera pruebas.
+  const done = siblings.filter((sibling) => progress.completed.includes(sibling.id)).length;
+  return index <= done + OPEN_AHEAD - 1;
 }
 
 export interface WorldProgress {
