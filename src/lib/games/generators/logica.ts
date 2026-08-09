@@ -219,3 +219,34 @@ export const genBelongings: RoundGenerator = pairMatch(BELONGINGS, {
   question: (pair) => `¿Quién va con ${pair.from.name}?`,
   spoken: (pair) => `Mira el dibujo. ¿Quién va con ${pair.from.name}?`,
 });
+
+// --- 64. De pequeño a grande -----------------------------------------------------
+
+/**
+ * Cuatro veces el mismo dibujo a cuatro tamaños. Es el mismo dibujo a
+ * propósito: si cambiara también el objeto, se podría acertar por otra vía
+ * que no fuese comparar tamaños.
+ */
+const SIZE_STEPS = ['xs', 'sm', 'lg', 'xl'] as const;
+
+export const genSizeOrder: RoundGenerator = (rng) => {
+  const emoji = pick(rng, COUNTABLES);
+  const askSmallest = rng() < 0.5;
+  const winner = askSmallest ? 'xs' : 'xl';
+
+  return {
+    question: askSmallest ? '¿Cuál es el MÁS PEQUEÑO?' : '¿Cuál es el MÁS GRANDE?',
+    spoken: askSmallest
+      ? 'Míralos todos. Toca el más pequeño de los cuatro.'
+      : 'Míralos todos. Toca el más grande de los cuatro.',
+    prompt: { kind: 'none' },
+    options: buildOptions(
+      rng,
+      SIZE_STEPS.map((scale) => ({
+        label: scale === winner ? 'este' : 'otro',
+        display: { kind: 'emoji' as const, emoji, scale },
+        correct: scale === winner,
+      })),
+    ),
+  };
+};

@@ -2,6 +2,7 @@
 
 import { pick, randomInt, sample } from '../../random';
 import {
+  HEIGHT_PAIRS,
   COUNTABLES,
   DAY_THINGS,
   LINE_THINGS,
@@ -281,3 +282,28 @@ export const genStoryOrder: RoundGenerator = orderedSequence(
   },
   { windowLen: 3 },
 );
+
+// --- 67. Alto y bajo ---------------------------------------------------------------
+
+export const genTallShort: RoundGenerator = (rng) => {
+  const pair = pick(rng, HEIGHT_PAIRS);
+  const askTall = rng() < 0.5;
+
+  return {
+    question: askTall ? '¿Cuál es más ALTO?' : '¿Cuál es más BAJO?',
+    spoken: askTall ? 'Toca el que es más alto.' : 'Toca el que es más bajo.',
+    prompt: { kind: 'none' },
+    options: buildOptions(rng, [
+      {
+        label: pair.tall.name,
+        display: { kind: 'emoji', emoji: pair.tall.emoji },
+        correct: askTall,
+      },
+      {
+        label: pair.short.name,
+        display: { kind: 'emoji', emoji: pair.short.emoji },
+        correct: !askTall,
+      },
+    ]),
+  };
+};

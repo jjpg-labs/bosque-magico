@@ -8,6 +8,7 @@ import {
   genSeasons,
   genSize,
   genStoryOrder,
+  genTallShort,
   genTimeBeforeAfter,
   genWeekdays,
   genWeight,
@@ -125,6 +126,17 @@ export const MEDIDAS_GAMES: readonly GameDefinition[] = [
     roundsToWin: 3,
     generate: genStoryOrder,
   },
+  {
+    id: 67,
+    title: 'Alto y Bajo',
+    desc: '¿Cuál es más alto?',
+    icon: '🏔️',
+    cat: 'Medidas',
+    world: 'medidas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genTallShort,
+  },
 ];
 
 export const MEDIDAS_STICKERS: readonly Sticker[] = [
@@ -150,4 +162,5 @@ export const MEDIDAS_STICKERS: readonly Sticker[] = [
   { gameId: 71, name: 'Hojita de Otoño', icon: '🍂' },
   { gameId: 72, name: 'Lunita Dormilona', icon: '🌙' },
   { gameId: 73, name: 'Cuento Ordenado', icon: '📖' },
+  { gameId: 67, name: 'Jirafa Altísima', icon: '🦒' },
 ];

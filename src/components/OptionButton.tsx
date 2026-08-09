@@ -1,6 +1,6 @@
 import { Shape } from './Shape';
 import { unhandled } from '../lib/exhaustive';
-import type { Option } from '../lib/games/types';
+import type { EmojiScale, Option } from '../lib/games/types';
 
 export type OptionState = 'idle' | 'wrong' | 'right';
 
@@ -17,6 +17,18 @@ const STATE_CLASSES: Record<OptionState, string> = {
   // Una opción descartada se atenúa en vez de desaparecer: quitarla movería
   // el resto de botones justo cuando la niña está mirando dónde tocar.
   wrong: 'bg-slate-100 border-slate-200 opacity-40',
+};
+
+/**
+ * Los cinco tamaños tienen que verse claramente escalonados de un vistazo:
+ * ordenar de pequeño a grande no puede depender de mirar dos veces.
+ */
+const EMOJI_SCALES: Record<EmojiScale, string> = {
+  xs: 'text-xl',
+  sm: 'text-3xl',
+  md: 'text-5xl',
+  lg: 'text-7xl',
+  xl: 'text-8xl',
 };
 
 export function OptionButton({ option, state, disabled, onSelect }: OptionButtonProps) {
@@ -63,11 +75,7 @@ function OptionDisplay({ display }: { display: Option['display'] }) {
 
     case 'emoji':
       return (
-        <span
-          className={`leading-none ${
-            display.scale === 'lg' ? 'text-7xl' : display.scale === 'sm' ? 'text-2xl' : 'text-5xl'
-          }`}
-        >
+        <span className={`leading-none ${EMOJI_SCALES[display.scale ?? 'md']}`}>
           {display.emoji}
         </span>
       );

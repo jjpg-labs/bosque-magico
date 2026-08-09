@@ -7,10 +7,12 @@ import {
   genClassMember,
   genColorIntruder,
   genColorPattern,
+  genSizeOrder,
   genMiddleGap,
   genOddOne,
   genPatterns,
 } from '../generators';
+import { COLORS } from '../data';
 import type { GameDefinition, Sticker } from '../types';
 
 export const LOGICA_GAMES: readonly GameDefinition[] = [
@@ -124,6 +126,29 @@ export const LOGICA_GAMES: readonly GameDefinition[] = [
     roundsToWin: 3,
     generate: genBelongings,
   },
+  {
+    id: 64,
+    title: 'De Pequeño a Grande',
+    desc: '¿Cuál es el más pequeño de todos?',
+    icon: '📶',
+    cat: 'Medidas',
+    world: 'logica',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genSizeOrder,
+  },
+  {
+    id: 63,
+    title: 'Memoria de Colores',
+    desc: 'Encuentra las parejas de colores iguales',
+    icon: '🎴',
+    cat: 'Memoria',
+    world: 'logica',
+    kind: 'memory',
+    roundsToWin: 1,
+    pairCount: 6,
+    pairPool: COLORS.map((color) => ({ emoji: color.emoji, label: color.name })),
+  },
 ];
 
 export const LOGICA_STICKERS: readonly Sticker[] = [
@@ -137,4 +162,6 @@ export const LOGICA_STICKERS: readonly Sticker[] = [
   { gameId: 61, name: 'Pollito Recién Salido', icon: '🐣' },
   { gameId: 62, name: 'Lupa Detective', icon: '🔍' },
   { gameId: 65, name: 'Huella Misteriosa', icon: '🐾' },
+  { gameId: 64, name: 'Escalera de Tamaños', icon: '📶' },
+  { gameId: 63, name: 'Cartas de Colores', icon: '🎴' },
 ];

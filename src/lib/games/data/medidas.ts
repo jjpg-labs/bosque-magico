@@ -180,3 +180,26 @@ export const STORY_STRIPS: ReadonlyArray<readonly Item[]> = [
     { emoji: '🚪', name: 'salir a la calle' },
   ],
 ];
+
+/**
+ * Parejas con una diferencia de altura evidente.
+ *
+ * Alto y bajo no es lo mismo que grande y pequeño, y por eso van con objetos
+ * reales en vez de con el mismo dibujo a dos tamaños: lo que se aprende aquí
+ * es que la jirafa es alta, no que un emoji esté más ampliado que otro.
+ */
+export const HEIGHT_PAIRS: ReadonlyArray<{
+  tall: { emoji: string; name: string };
+  short: { emoji: string; name: string };
+}> = [
+  { tall: { emoji: '🦒', name: 'la jirafa' }, short: { emoji: '🐁', name: 'el ratón' } },
+  { tall: { emoji: '🌳', name: 'el árbol' }, short: { emoji: '🌼', name: 'la margarita' } },
+  { tall: { emoji: '🏢', name: 'el edificio' }, short: { emoji: '🏠', name: 'la casa' } },
+  { tall: { emoji: '🗼', name: 'la torre' }, short: { emoji: '⛺', name: 'la tienda de campaña' } },
+  { tall: { emoji: '🐘', name: 'el elefante' }, short: { emoji: '🐌', name: 'el caracol' } },
+  { tall: { emoji: '🌵', name: 'el cactus' }, short: { emoji: '🍄', name: 'la seta' } },
+  { tall: { emoji: '🏔️', name: 'la montaña' }, short: { emoji: '🪨', name: 'la piedra' } },
+  { tall: { emoji: '🦓', name: 'la cebra' }, short: { emoji: '🐇', name: 'el conejo' } },
+  { tall: { emoji: '🚌', name: 'el autobús' }, short: { emoji: '🛴', name: 'el patinete' } },
+  { tall: { emoji: '🦕', name: 'el dinosaurio' }, short: { emoji: '🐢', name: 'la tortuga' } },
+];

@@ -80,6 +80,9 @@ export type Prompt =
   | { kind: 'shape'; shape: ShapeName }
   | { kind: 'listen'; word: string; emoji: string };
 
+/** Cinco tamaños, suficientes para ordenar cuatro cosas de menor a mayor. */
+export type EmojiScale = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
 export interface Option {
   /** Estable dentro de una ronda; sirve de key de React. */
   id: string;
@@ -88,8 +91,8 @@ export interface Option {
   /** Qué se pinta: una letra o número, un emoji, una figura o un grupo de emojis. */
   display:
     | { kind: 'text'; text: string }
-    /** `scale` es opcional: solo lo usa "Grande y Pequeño" para variar el tamaño visual. */
-    | { kind: 'emoji'; emoji: string; scale?: 'sm' | 'lg' }
+    /** `scale` es opcional: lo usan las pruebas de medida para variar el tamaño visual. */
+    | { kind: 'emoji'; emoji: string; scale?: EmojiScale }
     /** `color` solo lo usa «Formas de Colores»; sin él, la figura usa el suyo. */
     | { kind: 'shape'; shape: ShapeName; color?: ShapeColor }
     | { kind: 'group'; items: string[] };
@@ -145,6 +148,12 @@ export interface GameDefinition {
   generateFor?: (completedIds: readonly number[]) => RoundGenerator;
   /** Solo en juegos de tipo 'memory'. */
   pairCount?: number;
+  /**
+   * Solo en juegos de tipo 'memory': de dónde salen las cartas. Si falta, se
+   * usan los bichos. Vive aquí y no dentro del componente para que una
+   * baraja nueva sea contenido, no un cambio de interfaz.
+   */
+  pairPool?: readonly { emoji: string; label: string }[];
 }
 
 export interface Sticker {

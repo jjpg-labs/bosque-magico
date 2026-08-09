@@ -124,7 +124,12 @@ export function GameContainer({
             </div>
           </div>
         ) : game.kind === 'memory' ? (
-          <MemoryGame pairCount={game.pairCount ?? 4} onSpeak={onSpeak} onWin={handleWin} />
+          <MemoryGame
+            pairCount={game.pairCount ?? 4}
+            pool={game.pairPool}
+            onSpeak={onSpeak}
+            onWin={handleWin}
+          />
         ) : (
           generate && (
             <ChoiceGame
