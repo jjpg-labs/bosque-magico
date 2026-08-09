@@ -61,12 +61,36 @@ export interface ChoiceOptions {
 
 const DEFAULT_OPTION_COUNT = 4;
 
+/** Opciones extra como mucho, al subir de nivel: se acaba en seis. */
+const MAX_EXTRA_OPTIONS = 2;
+
 function optionCountOf(factory: string, opts: ChoiceOptions): number {
   const count = opts.optionCount ?? DEFAULT_OPTION_COUNT;
   if (!Number.isInteger(count) || count < 2) {
     throw new Error(`${factory}: optionCount tiene que ser un entero de 2 en adelante (era ${count}).`);
   }
   return count;
+}
+
+/**
+ * Cuántas opciones tocan en esta ronda: cuatro al principio, cinco y seis
+ * según sube el nivel.
+ *
+ * Es la forma barata de que **toda** prueba de fábrica escale, no solo las
+ * que tienen un rango numérico que estirar. Un distractor más es una cosa más
+ * que descartar, que es exactamente en lo que consiste la prueba.
+ *
+ * Un `optionCount` explícito manda y no crece: cuando una prueba pide tres
+ * opciones es porque solo hay tres respuestas posibles (tierra, mar o aire),
+ * y una cuarta tendría que repetir.
+ *
+ * No hace falta comprobar que el pool dé para tanto: `distinctDistractors` y
+ * `numericDistractors` devuelven como mucho lo que haya, así que una prueba
+ * con pool justo se queda en las opciones que puede y no rompe nada.
+ */
+function countForTier(base: number, opts: ChoiceOptions, tier: number): number {
+  if (opts.optionCount !== undefined) return base;
+  return base + Math.min(Math.max(tier, 0), MAX_EXTRA_OPTIONS);
 }
 
 /**
@@ -161,10 +185,11 @@ export function emojiToName(
   texts: Texts<Item>,
   opts: ChoiceOptions = {},
 ): RoundGenerator {
-  const count = optionCountOf('emojiToName', opts);
-  assertEnough('emojiToName', distinctKeys(pool, (item) => item.name), count, 'nombres');
+  const baseCount = optionCountOf('emojiToName', opts);
+  assertEnough('emojiToName', distinctKeys(pool, (item) => item.name), baseCount, 'nombres');
 
-  return (rng) => {
+  return (rng, tier = 0) => {
+    const count = countForTier(baseCount, opts, tier);
     const answer = pick(rng, pool);
     const others = distinctDistractors(rng, pool, (item) => item.name, answer.name, count - 1);
 
@@ -206,12 +231,13 @@ export function nameToEmoji(
   texts: Texts<Item>,
   opts: NameToEmojiOptions = {},
 ): RoundGenerator {
-  const count = optionCountOf('nameToEmoji', opts);
+  const baseCount = optionCountOf('nameToEmoji', opts);
   const asText = opts.as === 'text';
   const keyOf = (item: Item) => (asText ? item.name : item.emoji);
-  assertEnough('nameToEmoji', distinctKeys(pool, keyOf), count, asText ? 'textos' : 'emojis');
+  assertEnough('nameToEmoji', distinctKeys(pool, keyOf), baseCount, asText ? 'textos' : 'emojis');
 
-  return (rng) => {
+  return (rng, tier = 0) => {
+    const count = countForTier(baseCount, opts, tier);
     const answer = pick(rng, pool);
     const others = distinctDistractors(rng, pool, keyOf, keyOf(answer), count - 1);
     const seed = (item: Item, correct: boolean) =>
@@ -257,7 +283,7 @@ export function pairMatch(
   texts: Texts<Pair>,
   opts: ChoiceOptions = {},
 ): RoundGenerator {
-  const count = optionCountOf('pairMatch', opts);
+  const baseCount = optionCountOf('pairMatch', opts);
 
   const answers = new Map<string, string>();
   for (const pair of pairs) {
@@ -271,9 +297,10 @@ export function pairMatch(
   }
 
   const targets = pairs.map((pair) => pair.to);
-  assertEnough('pairMatch', distinctKeys(targets, (item) => item.emoji), count, 'respuestas');
+  assertEnough('pairMatch', distinctKeys(targets, (item) => item.emoji), baseCount, 'respuestas');
 
-  return (rng) => {
+  return (rng, tier = 0) => {
+    const count = countForTier(baseCount, opts, tier);
     const answer = pick(rng, pairs);
     const others = distinctDistractors(
       rng,
@@ -321,9 +348,9 @@ export function categoryMember(
   texts: Texts<CategoryPick>,
   opts: ChoiceOptions = {},
 ): RoundGenerator {
-  const count = optionCountOf('categoryMember', opts);
+  const baseCount = optionCountOf('categoryMember', opts);
   assertDisjoint('categoryMember', categories);
-  assertEnough('categoryMember', categories.length, count, 'categorías');
+  assertEnough('categoryMember', categories.length, baseCount, 'categorías');
 
   for (const category of categories) {
     if (category.items.length === 0) {
@@ -331,7 +358,8 @@ export function categoryMember(
     }
   }
 
-  return (rng) => {
+  return (rng, tier = 0) => {
+    const count = countForTier(baseCount, opts, tier);
     // Una categoría por opción: como son disjuntas, no hay emojis repetidos.
     const [category, ...strangers] = sample(rng, categories, count);
     const item = pick(rng, category.items);
@@ -372,15 +400,15 @@ export function oddOneOut(
   texts: Texts<OddOnePick>,
   opts: ChoiceOptions = {},
 ): RoundGenerator {
-  const count = optionCountOf('oddOneOut', opts);
+  const baseCount = optionCountOf('oddOneOut', opts);
   assertDisjoint('oddOneOut', categories);
   assertEnough('oddOneOut', categories.length, 2, 'categorías');
 
-  // La familia tiene que dar count - 1 miembros; el intruso, con uno le basta.
-  const families = categories.filter((category) => category.items.length >= count - 1);
+  // La familia tiene que dar baseCount - 1 miembros; el intruso, con uno le basta.
+  const families = categories.filter((category) => category.items.length >= baseCount - 1);
   if (families.length === 0) {
     throw new Error(
-      `oddOneOut: ninguna categoría tiene los ${count - 1} elementos que hacen falta para formar la familia.`,
+      `oddOneOut: ninguna categoría tiene los ${baseCount - 1} elementos que hacen falta para formar la familia.`,
     );
   }
   for (const category of categories) {
@@ -389,7 +417,8 @@ export function oddOneOut(
     }
   }
 
-  return (rng) => {
+  return (rng, tier = 0) => {
+    const count = countForTier(baseCount, opts, tier);
     const family = pick(rng, families);
     const stranger = pick(
       rng,
@@ -450,7 +479,7 @@ export function orderedSequence(
   texts: Texts<SequencePick>,
   opts: OrderedSequenceOptions = {},
 ): RoundGenerator {
-  const count = optionCountOf('orderedSequence', opts);
+  const baseCount = optionCountOf('orderedSequence', opts);
   const windowLen = opts.windowLen ?? 4;
   if (windowLen < 2) {
     throw new Error('orderedSequence: windowLen tiene que ser 2 o más para dejar una referencia visible.');
@@ -465,9 +494,10 @@ export function orderedSequence(
   }
 
   const everyStep = sequences.flat();
-  assertEnough('orderedSequence', distinctKeys(everyStep, (item) => item.emoji), count, 'pasos');
+  assertEnough('orderedSequence', distinctKeys(everyStep, (item) => item.emoji), baseCount, 'pasos');
 
-  return (rng) => {
+  return (rng, tier = 0) => {
+    const count = countForTier(baseCount, opts, tier);
     const sequence = pick(rng, sequences);
     const length = Math.min(windowLen, sequence.length);
     const start = randomInt(rng, 0, sequence.length - length);
@@ -541,9 +571,10 @@ export function numberQuestion(
   build: (rng: Rng, tier: number) => NumberSpec,
   opts: ChoiceOptions = {},
 ): RoundGenerator {
-  const count = optionCountOf('numberQuestion', opts);
+  const baseCount = optionCountOf('numberQuestion', opts);
 
   return (rng, tier = 0) => {
+    const count = countForTier(baseCount, opts, tier);
     const spec = build(rng, tier);
     const distractors = numericDistractors(
       rng,
@@ -616,7 +647,7 @@ export function listenAndPick<T>(
   texts: Texts<ListenPick<T>>,
   opts: ChoiceOptions = {},
 ): RoundGenerator {
-  const count = optionCountOf('listenAndPick', opts);
+  const baseCount = optionCountOf('listenAndPick', opts);
   const keyOf = (item: T) => displayKey(relation.optionOf(item).display);
 
   // Solo sirven de objetivo los que tienen con quién casar, y solo si además
@@ -626,16 +657,17 @@ export function listenAndPick<T>(
     const matches = relation.matchesOf(item, pool);
     if (matches.length === 0) return false;
     const related = new Set([keyOf(item), ...matches.map(keyOf)]);
-    return distinctKeys(pool.filter((other) => !related.has(keyOf(other))), keyOf) >= count - 1;
+    return distinctKeys(pool.filter((other) => !related.has(keyOf(other))), keyOf) >= baseCount - 1;
   });
 
   if (usable.length === 0) {
     throw new Error(
-      `listenAndPick: ninguna palabra del pool tiene pareja y a la vez ${count - 1} distractores ajenos.`,
+      `listenAndPick: ninguna palabra del pool tiene pareja y a la vez ${baseCount - 1} distractores ajenos.`,
     );
   }
 
-  return (rng) => {
+  return (rng, tier = 0) => {
+    const count = countForTier(baseCount, opts, tier);
     const target = pick(rng, usable);
     const matches = relation.matchesOf(target, pool);
     const match = pick(rng, matches);

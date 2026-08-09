@@ -155,17 +155,29 @@ más tarde, en un cambio aparte.
    cumplir los dos invariantes: exactamente una opción con `correct: true` y
    ningún `display` repetido.
 
-   El parámetro `tier` es opcional: solo lo usan las pruebas con rango
-   numérico natural (contar, sumar, restar...) para subir la dificultad cada
-   3 partidas — ver `tierFor` en `progress.ts`. Si tu prueba no tiene un
-   rango numérico que escalar, simplemente ignóralo.
+   El parámetro `tier` (0 a 3, sube cada 3 partidas — ver `tierFor` en
+   `progress.ts`) es la dificultad. **Las fábricas ya lo usan solas**: sin
+   `optionCount` explícito, una ronda pasa de cuatro opciones a cinco y seis
+   según sube el nivel, así que una prueba de fábrica escala sin que hagas
+   nada. Si escribes el generador a mano y tiene un rango numérico que
+   estirar (contar, sumar...), úsalo; si no, puedes ignorarlo.
+
+   Fija `optionCount` solo cuando la prueba tenga un número cerrado de
+   respuestas posibles —«¿por tierra, mar o aire?» son tres y punto—: un
+   `optionCount` explícito no crece con el nivel.
 
 4. **Registro en el catálogo**, en `catalog/<mundo>.ts`: añade la
    `GameDefinition` a `<MUNDO>_GAMES` (`id`, `title`, `desc`, `icon`, `cat`
-   de 11 caracteres como mucho, `world`, `kind: 'choice'`, `roundsToWin` — 3
-   es el estándar — y `generate`) y su pegatina a `<MUNDO>_STICKERS`
+   de 11 caracteres como mucho, `world`, `kind`, `roundsToWin` — 3 es el
+   estándar — y `generate`) y su pegatina a `<MUNDO>_STICKERS`
    (`gameId`, `name`, `icon`). **No pongas `bg` ni `color`**: se heredan del
    mundo. Si el mundo es nuevo, añade sus dos líneas a `catalog/index.ts`.
+
+   Hay tres `kind`: `'choice'` (lo normal), `'memory'` (parejas; lleva
+   `pairCount` y opcionalmente `pairPool` con la baraja) y `'marathon'`
+   (rondas sin fin). Y para las pruebas que remezclan el catálogo,
+   `generateFor(completedIds)` en vez de `generate`: recibe lo ya superado y
+   devuelve el generador. Manda sobre `generate` si están los dos.
 
 5. **Tests.** El barrido genérico de `src/test/generators.test.ts`
    (`ALL_ROUNDS`) recorre **todas** las pruebas de `GAMES` con 200 semillas,
@@ -173,6 +185,12 @@ más tarde, en un cambio aparte.
    respuesta correcta, sin `display` repetidos, sin repetir ejercicio dentro
    de una partida y con variedad suficiente para no memorizarse. No hace
    falta escribir nada para eso.
+
+   ⚠️ El mínimo de variedad es `max(8, 4 × roundsToWin)` ejercicios distintos,
+   y **`VARIETY_DEBT` está vacío: ninguna prueba está exenta**. Si la tuya no
+   llega, la solución es ampliar el pool o darle un segundo modo de preguntar
+   —«Formas Geométricas» alterna tocar la figura con nombrarla, y «Colores»
+   con «¿de qué color es el plátano?»—, nunca añadir tu id a la lista.
 
    Añade un test específico solo si tu prueba tiene un invariante propio que
    el barrido no captura (que una suma cuadre con los elementos dibujados,
@@ -298,6 +316,12 @@ Todos los enunciados se leen en voz alta, y eso impone reglas al contenido:
 - No reasignes un id ya usado ni retires una prueba: el progreso guardado se
   valida contra los ids reales y se perderían pegatinas ganadas.
 - No escribas `bg` ni `color` en una pegatina nueva: se heredan del mundo.
+- No añadas tu prueba a `VARIETY_DEBT`: está vacío a propósito.
+- Si añades un `Prompt.kind` o un `display.kind` nuevo, el guard `unhandled`
+  (`src/lib/exhaustive.ts`) te obliga a pintarlo en los **tres** sitios:
+  `PromptView`, `OptionButton` y las fichas imprimibles. Es error de
+  compilación, no un fallo mudo, pero conviene saberlo antes de empezar: un
+  `kind` nuevo cuesta bastante más que una tabla de datos.
 - No toques `factories.ts` para añadir una fábrica nueva: va en tu
   `generators/<mundo>.ts`.
 - No añadas dependencias nuevas: el proyecto presume de no tener servidor ni

@@ -13,7 +13,7 @@ interface GameContainerProps {
   onSpeak: (text: string) => void;
   onComplete: (gameId: number) => void;
   onNext: () => void;
-  /** Nivel de dificultad numérica (0-2) — ver `progress.ts:tierFor`. */
+  /** Nivel de dificultad (0-3) — ver `progress.ts:tierFor`. */
   tier?: number;
   /** Pruebas ya superadas, para las que remezclan el catálogo (`generateFor`). */
   completedIds?: readonly number[];

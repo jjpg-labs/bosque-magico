@@ -109,12 +109,18 @@ export function incrementPlayCount(progress: Progress, gameId: number): Progress
 }
 
 /**
- * Nivel de dificultad numérica (0, 1 o 2): sube cada 3 partidas jugadas de
- * esa prueba, con tope en 2 para no disparar la dificultad sin límite.
+ * Nivel de dificultad (0 a 3): sube cada 3 partidas jugadas de esa prueba,
+ * con tope para no dispararla sin límite.
+ *
+ * Sube dos cosas: el rango numérico de las pruebas que lo tienen, y el número
+ * de opciones de todas las de fábrica —cuatro al principio, seis a partir del
+ * nivel dos—. Antes solo escalaban 24 de las 98 pruebas con contenido.
  */
+const MAX_TIER = 3;
+
 export function tierFor(progress: Progress, gameId: number): number {
   const plays = progress.playCounts[gameId] ?? 0;
-  return Math.min(Math.floor(plays / 3), 2);
+  return Math.min(Math.floor(plays / 3), MAX_TIER);
 }
 
 /** Guarda la marca solo si mejora la anterior. */

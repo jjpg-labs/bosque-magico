@@ -188,7 +188,7 @@ describe('dificultad escalonada', () => {
     expect(tierFor(emptyProgress, 3)).toBe(0);
   });
 
-  it('sube de tier cada 3 partidas, con tope en 2', () => {
+  it('sube de tier cada 3 partidas, con tope en 3', () => {
     let progress = emptyProgress;
     for (let i = 0; i < 3; i++) progress = incrementPlayCount(progress, 3);
     expect(tierFor(progress, 3)).toBe(1);
@@ -196,8 +196,11 @@ describe('dificultad escalonada', () => {
     for (let i = 0; i < 3; i++) progress = incrementPlayCount(progress, 3);
     expect(tierFor(progress, 3)).toBe(2);
 
+    for (let i = 0; i < 3; i++) progress = incrementPlayCount(progress, 3);
+    expect(tierFor(progress, 3)).toBe(3);
+
     for (let i = 0; i < 30; i++) progress = incrementPlayCount(progress, 3);
-    expect(tierFor(progress, 3)).toBe(2);
+    expect(tierFor(progress, 3)).toBe(3);
   });
 
   it('el contador es independiente por prueba', () => {

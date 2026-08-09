@@ -1,3 +1,22 @@
+> **Estado: ejecutado.** Este documento es el plan tal y como se escribió
+> antes de empezar, y se conserva como registro de por qué el catálogo está
+> hecho así. Lo que de verdad hay implementado se describe en el `README.md`
+> y en `docs/adding-a-prueba.md`, que son las fuentes vivas.
+>
+> Diferencias con lo que acabó haciéndose:
+>
+> - La prueba 52 («¿Hacia Dónde Va?») no existe: solo tiene cuatro respuestas
+>   posibles y no llegaba al mínimo de variedad. La orientación la cubren las
+>   escenas de las pruebas 48-51.
+> - La 100 iba a ser «Vamos de Viaje» (destino → transporte) y no tiene
+>   respuesta única: a la playa se va en coche, en tren y en autobús. Es «Los
+>   Sitios del Pueblo».
+> - Se añadió el «Maratón Amable» (id 102), que la fase 2 preveía, y la
+>   ventana de tres pruebas abiertas por mundo, que no estaba en el plan.
+> - La fase 7 (profundidad) se hizo en parte: la deuda de variedad está
+>   saldada y el nivel escala en 47 de las 98 pruebas con contenido, no en
+>   todas.
+
 # Plan: de 19 a ~100 pruebas en El Bosque Mágico de los Bichitos
 
 Documento de diseño e implementación. Escrito para que otro agente lo ejecute

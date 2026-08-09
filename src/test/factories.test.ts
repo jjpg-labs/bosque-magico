@@ -136,22 +136,33 @@ const RHYMES: readonly RhymeWord[] = [
 const TEXTS = { question: () => 'Pregunta', spoken: () => 'Enunciado hablado' };
 
 /** Los dos invariantes que el barrido genérico exige a toda ronda. */
-function expectValidRound(round: Round, where: string, optionCount: number) {
+function expectValidRound(round: Round, where: string, optionCount: number | 'porNivel') {
   const correct = round.options.filter((option) => option.correct);
   expect(correct, `${where}: opciones correctas`).toHaveLength(1);
 
   const displays = round.options.map((option) => JSON.stringify(option.display));
   expect(new Set(displays).size, `${where}: displays repetidos`).toBe(displays.length);
 
-  expect(round.options, `${where}: número de opciones`).toHaveLength(optionCount);
+  if (optionCount === 'porNivel') {
+    // Sin `optionCount` explícito, la cuenta la marca el nivel: cuatro al
+    // principio y hasta seis, o lo que dé el pool si es más corto.
+    expect(round.options.length, `${where}: número de opciones`).toBeGreaterThanOrEqual(2);
+    expect(round.options.length, `${where}: número de opciones`).toBeLessThanOrEqual(6);
+  } else {
+    expect(round.options, `${where}: número de opciones`).toHaveLength(optionCount);
+  }
   expect(round.question.length, `${where}: enunciado vacío`).toBeGreaterThan(0);
   expect(round.spoken.length, `${where}: enunciado hablado vacío`).toBeGreaterThan(0);
 }
 
 /** Ejecuta la fábrica con muchas semillas y comprueba los invariantes en todas. */
-function expectAlwaysValid(name: string, generate: RoundGenerator, optionCount = 4) {
+function expectAlwaysValid(
+  name: string,
+  generate: RoundGenerator,
+  optionCount: number | 'porNivel' = 'porNivel',
+) {
   for (const seed of SEEDS) {
-    for (const tier of [0, 1, 2]) {
+    for (const tier of [0, 1, 2, 3]) {
       expectValidRound(generate(seededRng(seed), tier), `${name} (semilla ${seed})`, optionCount);
     }
   }
@@ -223,7 +234,7 @@ describe('emojiToName', () => {
     const zones = emojiToName(ZONES, TEXTS);
     for (const seed of SEEDS) {
       const round = zones(seededRng(seed));
-      expectValidRound(round, `zonas (semilla ${seed})`, 4);
+      expectValidRound(round, `zonas (semilla ${seed})`, 'porNivel');
     }
   });
 
@@ -543,7 +554,7 @@ describe('makeMixGenerator', () => {
 
     for (const seed of SEEDS) {
       const round = mix(seededRng(seed));
-      expectValidRound(round, `mix (semilla ${seed})`, 4);
+      expectValidRound(round, `mix (semilla ${seed})`, 'porNivel');
       seen.add(round.prompt.kind);
     }
     // Con doscientas semillas tienen que haber salido varios tipos de prueba.

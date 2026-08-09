@@ -152,6 +152,38 @@ describe('generadores de rondas', () => {
     }
   });
 
+  it('las pruebas de fábrica ofrecen más opciones según sube el nivel', () => {
+    // Es lo que hace que escale una prueba sin rango numérico que estirar:
+    // un distractor más es una cosa más que descartar. Las que fijan
+    // `optionCount` no crecen a propósito (solo hay tres respuestas posibles).
+    const media = (game: (typeof CHOICE_GAMES)[number], tier: number) =>
+      SEEDS.reduce((total, seed) => total + game.generate(seededRng(seed), tier).options.length, 0) /
+      SEEDS.length;
+
+    const escalan = CHOICE_GAMES.filter((game) => media(game, 2) > media(game, 0) + 0.01);
+    expect(escalan.length).toBeGreaterThanOrEqual(20);
+
+    for (const game of escalan) {
+      // Nunca baja al subir de nivel, y nunca se dispara.
+      expect(media(game, 1), game.title).toBeGreaterThanOrEqual(media(game, 0));
+      expect(media(game, 2), game.title).toBeGreaterThanOrEqual(media(game, 1));
+      expect(media(game, 3), game.title).toBeGreaterThanOrEqual(media(game, 2));
+      expect(media(game, 3), game.title).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('ninguna ronda pasa de seis opciones, por muchas partidas que se jueguen', () => {
+    // Seis botones ya llenan la pantalla de un móvil; más sería ilegible.
+    for (const game of CHOICE_GAMES) {
+      for (const tier of [0, 1, 2, 3, 10]) {
+        for (const seed of SEEDS.slice(0, 40)) {
+          const round = game.generate(seededRng(seed), tier);
+          expect(round.options.length, `${game.title} (nivel ${tier})`).toBeLessThanOrEqual(6);
+        }
+      }
+    }
+  });
+
   it('cada prueba produce variedad suficiente para no memorizarse', () => {
     for (const game of CHOICE_GAMES) {
       if (VARIETY_DEBT.has(game.id)) continue;
