@@ -1,20 +1,96 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { seededRng } from '../lib/random';
 import { GAMES } from '../lib/games/catalog';
-import { ANIMAL_SOUNDS, EMOTIONS, RHYME_FAMILIES, ROUTINE_STEPS } from '../lib/games/data';
+import {
+  ANIMAL_SOUNDS,
+  COLOR_OBJECTS,
+  EMOTIONS,
+  RHYME_FAMILIES,
+  ROUTINE_STEPS,
+} from '../lib/games/data';
 import { generateRounds, initialLetter } from '../lib/games/generators';
 import type { Round } from '../lib/games/types';
 
 /** Muchas semillas: los generadores son aleatorios y un solo caso no prueba nada. */
 const SEEDS = Array.from({ length: 200 }, (_, i) => i + 1);
 
-const CHOICE_GAMES = GAMES.filter((game) => game.generate !== undefined);
+/**
+ * Las pruebas que producen rondas, con su generador ya resuelto.
+ *
+ * «La Aventura del Día» no trae `generate` sino `generateFor`, porque su
+ * mezcla depende de lo que se lleve superado; aquí se le pasa el catálogo
+ * entero para que también la recorran las comprobaciones genéricas.
+ */
+const ALL_IDS = GAMES.map((game) => game.id);
+const CHOICE_GAMES = GAMES.flatMap((game) => {
+  const generate = game.generateFor ? game.generateFor(ALL_IDS) : game.generate;
+  return generate ? [{ ...game, generate }] : [];
+});
+
+/**
+ * Todas las rondas de todas las pruebas, **en los cuatro niveles**.
+ *
+ * Recorrer solo el nivel 0 dejaba sin comprobar justo lo que cambia al subir:
+ * con más opciones hay más ocasiones de repetir un `display` o de quedarse sin
+ * distractores en un pool corto.
+ */
+const TIERS = [0, 1, 2, 3];
+
+/**
+ * Semillas por nivel. El 0 es el que más se juega y lleva las doscientas; los
+ * demás van con sesenta, que sigue siendo mucho más de lo que hace falta para
+ * pillar un `display` repetido y deja el fichero en unos pocos segundos.
+ */
+function seedsFor(tier: number): number[] {
+  return tier === 0 ? SEEDS : SEEDS.slice(0, 60);
+}
 
 function allRounds(): Round[] {
   return CHOICE_GAMES.flatMap((game) =>
-    SEEDS.flatMap((seed) => generateRounds(game.generate!, seededRng(seed), game.roundsToWin)),
+    TIERS.flatMap((tier) =>
+      seedsFor(tier).flatMap((seed) =>
+        generateRounds(game.generate!, seededRng(seed), game.roundsToWin, tier),
+      ),
+    ),
   );
 }
+
+// Se calcula una sola vez: es el 83 % del coste de este fichero y las seis
+// comprobaciones genéricas recorren exactamente el mismo material.
+const ALL_ROUNDS = allRounds();
+
+/**
+ * Identifica un ejercicio: mismo enunciado, mismo dibujo y misma respuesta.
+ * Dos rondas con el mismo `core` son la misma pregunta para la niña, aunque
+ * los distractores hayan salido distintos.
+ */
+function coreOf(round: Round): string {
+  const correct = round.options.find((option) => option.correct);
+  return [round.question, JSON.stringify(round.prompt), JSON.stringify(correct?.display)].join('|');
+}
+
+/**
+ * ¿Ignora el generador la semilla que le pasan?
+ *
+ * Con la misma semilla, un generador normal da siempre la misma ronda. «La
+ * Aventura del Día» no: siembra su aleatoriedad con la fecha y avanza esa
+ * suya en cada llamada, para ser la misma aventura toda la jornada. Se
+ * detecta por lo que hace y no por su id, para no tener que tocar esto si
+ * mañana hay otra prueba así.
+ */
+function esFijaPorFecha(generate: (rng: ReturnType<typeof seededRng>, tier?: number) => Round) {
+  return coreOf(generate(seededRng(1), 0)) !== coreOf(generate(seededRng(1), 0));
+}
+
+/**
+ * Deuda de variedad: pruebas eximidas del mínimo por tener el pool corto.
+ *
+ * **Está vacío, y la idea es que siga así.** Las cuatro que había —Formas,
+ * Colores, Sonidos y Emociones— se saldaron ampliando sus pools y dándoles
+ * un segundo modo de preguntar. Si una prueba nueva no llega al mínimo, la
+ * solución es más contenido, no una excepción aquí.
+ */
+const VARIETY_DEBT = new Set<number>();
 
 describe('initialLetter', () => {
   it('quita las tildes', () => {
@@ -28,43 +104,53 @@ describe('initialLetter', () => {
 });
 
 describe('generadores de rondas', () => {
-  it('cubre las 19 pruebas del catálogo', () => {
-    expect(GAMES).toHaveLength(19);
+  it('no deja ninguna prueba del catálogo sin implementar', () => {
+    // Un mínimo, no un número exacto: el catálogo crece por fases y no tiene
+    // sentido pagar un peaje de test en cada prueba nueva. Lo que sí protege
+    // es que no se borre medio catálogo por accidente.
+    expect(GAMES.length).toBeGreaterThanOrEqual(19);
     // La de memoria no usa generador; las demás sí. Ninguna debe quedar sin
     // implementar: en la versión original, 10 de 13 caían a un botón genérico.
-    const unimplemented = GAMES.filter((game) => game.kind === 'choice' && !game.generate);
+    const unimplemented = GAMES.filter(
+      (game) => game.kind === 'choice' && !game.generate && !game.generateFor,
+    );
     expect(unimplemented).toEqual([]);
   });
 
+  it('no repite ids en el catálogo', () => {
+    const ids = GAMES.map((game) => game.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('produce siempre exactamente una opción correcta', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       const correct = round.options.filter((option) => option.correct);
       expect(correct, `pregunta: ${round.question}`).toHaveLength(1);
     }
   });
 
   it('nunca repite el contenido visible de dos opciones', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       const rendered = round.options.map((option) => JSON.stringify(option.display));
       expect(new Set(rendered).size, `pregunta: ${round.question}`).toBe(rendered.length);
     }
   });
 
   it('da ids únicos a las opciones', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       const ids = round.options.map((option) => option.id);
       expect(new Set(ids).size).toBe(ids.length);
     }
   });
 
   it('siempre ofrece al menos dos opciones', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       expect(round.options.length).toBeGreaterThanOrEqual(2);
     }
   });
 
   it('rellena enunciado hablado y escrito', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       expect(round.question.length).toBeGreaterThan(0);
       expect(round.spoken.length).toBeGreaterThan(0);
     }
@@ -83,6 +169,73 @@ describe('generadores de rondas', () => {
     const letters = GAMES[0].generate!;
     const questions = new Set(SEEDS.map((seed) => letters(seededRng(seed)).question));
     expect(questions.size).toBeGreaterThan(5);
+  });
+
+  it('no repite el mismo ejercicio dentro de una misma partida', () => {
+    // `generateRounds` deduplica por ejercicio, no por enunciado. Antes
+    // deduplicaba solo por `question`, así que las siete pruebas cuyo
+    // enunciado es siempre el mismo («¿Cómo se siente?», «¿Cuántos hay?»...)
+    // repetían la misma cara en el 43 % de las partidas.
+    // Sin excepciones: con el dedupe por ejercicio, ni siquiera las pruebas de
+    // pool corto repiten dentro de una misma partida.
+    for (const game of CHOICE_GAMES) {
+      for (const tier of TIERS) {
+        for (const seed of seedsFor(tier)) {
+          const rounds = generateRounds(game.generate!, seededRng(seed), game.roundsToWin, tier);
+          const cores = new Set(rounds.map(coreOf));
+          expect(cores.size, `${game.title} (semilla ${seed}, nivel ${tier})`).toBe(rounds.length);
+        }
+      }
+    }
+  });
+
+  it('las pruebas de fábrica ofrecen más opciones según sube el nivel', () => {
+    // Es lo que hace que escale una prueba sin rango numérico que estirar:
+    // un distractor más es una cosa más que descartar. Las que fijan
+    // `optionCount` no crecen a propósito (solo hay tres respuestas posibles).
+    const media = (game: (typeof CHOICE_GAMES)[number], tier: number) =>
+      SEEDS.reduce((total, seed) => total + game.generate(seededRng(seed), tier).options.length, 0) /
+      SEEDS.length;
+
+    const escalan = CHOICE_GAMES.filter(
+      (game) => !esFijaPorFecha(game.generate) && media(game, 2) > media(game, 0) + 0.01,
+    );
+    // Sesenta y cinco crecen en opciones; las demás que escalan lo hacen
+    // estirando su rango numérico, que este test no mira.
+    expect(escalan.length).toBeGreaterThanOrEqual(60);
+
+    for (const game of escalan) {
+      // Nunca baja al subir de nivel, y nunca se dispara.
+      expect(media(game, 1), game.title).toBeGreaterThanOrEqual(media(game, 0));
+      expect(media(game, 2), game.title).toBeGreaterThanOrEqual(media(game, 1));
+      expect(media(game, 3), game.title).toBeGreaterThanOrEqual(media(game, 2));
+      expect(media(game, 3), game.title).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('ninguna ronda pasa de seis opciones, por muchas partidas que se jueguen', () => {
+    // Seis botones ya llenan la pantalla de un móvil; más sería ilegible.
+    for (const game of CHOICE_GAMES) {
+      for (const tier of [0, 1, 2, 3, 10]) {
+        for (const seed of SEEDS.slice(0, 40)) {
+          const round = game.generate(seededRng(seed), tier);
+          expect(round.options.length, `${game.title} (nivel ${tier})`).toBeLessThanOrEqual(6);
+        }
+      }
+    }
+  });
+
+  it('cada prueba produce variedad suficiente para no memorizarse', () => {
+    for (const game of CHOICE_GAMES) {
+      if (VARIETY_DEBT.has(game.id)) continue;
+      // «La Aventura del Día» es igual toda la jornada a propósito: su
+      // variedad no se mide por semilla sino por fecha, en su propio describe.
+      if (esFijaPorFecha(game.generate)) continue;
+      const cores = new Set(
+        Array.from({ length: 800 }, (_, seed) => coreOf(game.generate!(seededRng(seed + 1), 0))),
+      );
+      expect(cores.size, game.title).toBeGreaterThanOrEqual(Math.max(8, 4 * game.roundsToWin));
+    }
   });
 });
 
@@ -184,7 +337,23 @@ describe('Colores del Bosque', () => {
     for (const seed of SEEDS) {
       const round = colors(seededRng(seed));
       const correct = round.options.find((option) => option.correct)!;
-      expect(round.question).toBe(`Toca el color ${correct.label}`);
+      if (round.question.startsWith('Toca el color')) {
+        expect(round.question).toBe(`Toca el color ${correct.label}`);
+        continue;
+      }
+      // El otro modo: se ve un objeto y hay que decir de qué color es.
+      const objeto = COLOR_OBJECTS.find((o) => round.question.includes(o.name));
+      expect(objeto, round.question).toBeDefined();
+      expect(correct.label).toBe(objeto!.color);
+    }
+  });
+
+  it('nunca pregunta por el color de algo que puede ser de dos colores', () => {
+    // La manzana es roja y verde; el maíz, amarillo y verde. Un objeto con
+    // dos colores defendibles convierte la ronda en una trampa.
+    const ambiguos = ['🍎', '🌽', '🌶️', '🍏', '🐈', '🦜', '🎈'];
+    for (const objeto of COLOR_OBJECTS) {
+      expect(ambiguos, objeto.name).not.toContain(objeto.emoji);
     }
   });
 });
@@ -281,5 +450,60 @@ describe('La Rutina del Día', () => {
       expect(step).toBeDefined();
       expect(correct.display).toEqual({ kind: 'emoji', emoji: step.emoji });
     }
+  });
+});
+
+
+describe('La Aventura del Día', () => {
+  const aventura = GAMES.find((game) => game.id === 101)!;
+  const todos = GAMES.map((game) => game.id);
+
+  function rondasDe(fecha: Date, completadas: readonly number[] = todos): string[] {
+    vi.setSystemTime(fecha);
+    const rounds = generateRounds(aventura.generateFor!(completadas), seededRng(1), 8);
+    return rounds.map(coreOf);
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  it('es la misma aventura durante todo el día', () => {
+    // Se puede hablar de ella en la merienda y volver a jugarla igual.
+    const manana = rondasDe(new Date(2026, 7, 9, 9, 0));
+    const noche = rondasDe(new Date(2026, 7, 9, 20, 30));
+    expect(noche).toEqual(manana);
+  });
+
+  it('no depende de la semilla que le pasen, solo de la fecha', () => {
+    vi.setSystemTime(new Date(2026, 7, 9, 9, 0));
+    const conUna = generateRounds(aventura.generateFor!(todos), seededRng(1), 8).map(coreOf);
+    const conOtra = generateRounds(aventura.generateFor!(todos), seededRng(999), 8).map(coreOf);
+    expect(conOtra).toEqual(conUna);
+  });
+
+  it('cambia al día siguiente', () => {
+    const hoy = rondasDe(new Date(2026, 7, 9));
+    const manana = rondasDe(new Date(2026, 7, 10));
+    expect(manana).not.toEqual(hoy);
+  });
+
+  it('dentro de una misma aventura las rondas son distintas entre sí', () => {
+    const rondas = rondasDe(new Date(2026, 7, 9));
+    expect(new Set(rondas).size).toBe(rondas.length);
+  });
+
+  it('solo mezcla pruebas ya superadas', () => {
+    // Con una sola prueba superada, las ocho rondas salen todas de ella.
+    vi.setSystemTime(new Date(2026, 7, 9));
+    const soloColores = generateRounds(aventura.generateFor!([14]), seededRng(1), 8);
+    for (const ronda of soloColores) {
+      const esDeColores =
+        ronda.question.startsWith('Toca el color') || ronda.question.startsWith('¿De qué color');
+      expect(esDeColores, ronda.question).toBe(true);
+    }
+  });
+
+  it('sin nada superado todavía, mezcla el catálogo entero en vez de romperse', () => {
+    vi.setSystemTime(new Date(2026, 7, 9));
+    expect(() => generateRounds(aventura.generateFor!([]), seededRng(1), 8)).not.toThrow();
   });
 });

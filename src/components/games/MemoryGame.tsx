@@ -9,14 +9,22 @@ import type { MemoryCard } from '../../lib/games/types';
 /** Tiempo que quedan visibles dos cartas que no hacen pareja. */
 const PEEK_MS = 900;
 
-function buildDeck(rng: Rng, pairCount: number): MemoryCard[] {
-  const chosen = sample(rng, CRITTERS, pairCount);
-  const cards = chosen.flatMap((critter, pairIndex) =>
+type PairSource = { emoji: string; label: string };
+
+/** La baraja por defecto: los bichitos del bosque. */
+const CRITTER_PAIRS: readonly PairSource[] = CRITTERS.map((critter) => ({
+  emoji: critter.emoji,
+  label: critter.name,
+}));
+
+function buildDeck(rng: Rng, pairCount: number, pool: readonly PairSource[]): MemoryCard[] {
+  const chosen = sample(rng, pool, pairCount);
+  const cards = chosen.flatMap((pair, pairIndex) =>
     [0, 1].map((copy) => ({
       id: `card-${pairIndex}-${copy}`,
       pairId: `pair-${pairIndex}`,
-      emoji: critter.emoji,
-      label: critter.name,
+      emoji: pair.emoji,
+      label: pair.label,
     })),
   );
   return shuffle(rng, cards);
@@ -27,10 +35,18 @@ interface MemoryGameProps {
   onSpeak: (text: string) => void;
   onWin: () => void;
   rng?: Rng;
+  /** Baraja de la que salen las parejas. Por defecto, los bichitos. */
+  pool?: readonly PairSource[];
 }
 
-export function MemoryGame({ pairCount, onSpeak, onWin, rng = defaultRng }: MemoryGameProps) {
-  const deck = useMemo(() => buildDeck(rng, pairCount), [rng, pairCount]);
+export function MemoryGame({
+  pairCount,
+  onSpeak,
+  onWin,
+  rng = defaultRng,
+  pool = CRITTER_PAIRS,
+}: MemoryGameProps) {
+  const deck = useMemo(() => buildDeck(rng, pairCount, pool), [rng, pairCount, pool]);
 
   const [flipped, setFlipped] = useState<string[]>([]);
   const [matched, setMatched] = useState<string[]>([]);

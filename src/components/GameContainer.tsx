@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GirlAvatar } from './GirlAvatar';
 import { ChoiceGame } from './games/ChoiceGame';
+import { MarathonGame } from './games/MarathonGame';
 import { MemoryGame } from './games/MemoryGame';
 import { playSound } from '../lib/audio';
-import { TOTAL_GAMES } from '../lib/games/catalog';
+import { nextGameId } from '../lib/games/catalog';
 import type { GameDefinition } from '../lib/games/types';
 
 interface GameContainerProps {
@@ -12,11 +13,27 @@ interface GameContainerProps {
   onSpeak: (text: string) => void;
   onComplete: (gameId: number) => void;
   onNext: () => void;
-  /** Nivel de dificultad numérica (0-2) — ver `progress.ts:tierFor`. */
+  /** Nivel de dificultad (0-3) — ver `progress.ts:tierFor`. */
   tier?: number;
+  /** Pruebas ya superadas, para las que remezclan el catálogo (`generateFor`). */
+  completedIds?: readonly number[];
+  /** Mejor marca de la maratón, para poder superarla. */
+  bestMarathon?: number;
+  /** Se llama al salir de la maratón, con los aciertos de esa tanda. */
+  onRecord?: (hits: number) => void;
 }
 
-export function GameContainer({ game, onBack, onSpeak, onComplete, onNext, tier = 0 }: GameContainerProps) {
+export function GameContainer({
+  game,
+  onBack,
+  onSpeak,
+  onComplete,
+  onNext,
+  tier = 0,
+  completedIds = [],
+  bestMarathon = 0,
+  onRecord = () => {},
+}: GameContainerProps) {
   const [passed, setPassed] = useState(false);
 
   // Reinicia al cambiar de prueba (el componente se reutiliza entre juegos).
@@ -29,7 +46,17 @@ export function GameContainer({ game, onBack, onSpeak, onComplete, onNext, tier 
     onComplete(game.id);
   }, [game.id, onComplete]);
 
-  const isLastGame = game.id >= TOTAL_GAMES;
+  const isLastGame = nextGameId(game.id) === undefined;
+
+  // `generateFor` manda sobre `generate`: es lo que usan las pruebas que
+  // remezclan lo ya superado. Se memoiza porque `ChoiceGame` regenera las
+  // rondas cuando cambia la identidad del generador, y sin esto la pregunta
+  // cambiaría bajo el dedo de la niña en cada render del padre.
+  const generate = useMemo(
+    () => (game.generateFor ? game.generateFor(completedIds) : game.generate),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [game.id, completedIds.join(',')],
+  );
 
   return (
     <section className="bg-white rounded-3xl p-4 md:p-6 shadow-xl border-4 border-emerald-200 min-h-[480px] flex flex-col">
@@ -103,14 +130,30 @@ export function GameContainer({ game, onBack, onSpeak, onComplete, onNext, tier 
               </button>
             </div>
           </div>
+        ) : game.kind === 'marathon' && generate ? (
+          <MarathonGame
+            key={game.id}
+            generate={generate}
+            roundsToWin={game.roundsToWin}
+            onSpeak={onSpeak}
+            onWin={handleWin}
+            onExit={onBack}
+            best={bestMarathon}
+            onRecord={onRecord}
+          />
         ) : game.kind === 'memory' ? (
-          <MemoryGame pairCount={game.pairCount ?? 4} onSpeak={onSpeak} onWin={handleWin} />
+          <MemoryGame
+            pairCount={game.pairCount ?? 4}
+            pool={game.pairPool}
+            onSpeak={onSpeak}
+            onWin={handleWin}
+          />
         ) : (
-          game.generate && (
+          generate && (
             <ChoiceGame
               // Fuerza un remontaje al cambiar de prueba, para regenerar rondas.
               key={game.id}
-              generate={game.generate}
+              generate={generate}
               roundsToWin={game.roundsToWin}
               onSpeak={onSpeak}
               onWin={handleWin}

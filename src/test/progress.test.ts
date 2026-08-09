@@ -1,30 +1,151 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  allWorldProgress,
+  currentWorldId,
   emptyProgress,
   hasSticker,
   incrementPlayCount,
   isUnlocked,
+  isWorldUnlocked,
   loadProgress,
   markCompleted,
+  recordMarathon,
   resetProgress,
   saveProgress,
   tierFor,
+  worldProgress,
 } from '../lib/progress';
 import type { Progress } from '../lib/progress';
+import { GAMES, WORLDS, gamesOfWorld, populatedWorlds } from '../lib/games/catalog';
 
 function progressWith(completed: number[], playCounts: Record<number, number> = {}): Progress {
-  return { completed, playCounts };
+  return { completed, playCounts, bestMarathon: 0 };
 }
 
-describe('desbloqueo de pruebas', () => {
-  it('la primera prueba está siempre disponible', () => {
-    expect(isUnlocked(emptyProgress, 1)).toBe(true);
+/** Todas las pruebas de los mundos indicados, para dar por hecho un mundo entero. */
+function idsOf(...worlds: Array<Parameters<typeof gamesOfWorld>[0]>): number[] {
+  return worlds.flatMap((world) => gamesOfWorld(world).map((game) => game.id));
+}
+
+describe('apertura de mundos', () => {
+  it('los mundos «always» están abiertos desde el primer día', () => {
+    const open = WORLDS.filter((world) => world.unlock.kind === 'always');
+    // Varios a la vez: es lo que evita quedarse atascada detrás de una prueba.
+    expect(open.length).toBeGreaterThanOrEqual(4);
+    for (const world of open) {
+      expect(isWorldUnlocked(emptyProgress, world.id), world.name).toBe(true);
+    }
   });
 
-  it('el resto exige haber superado la anterior', () => {
-    expect(isUnlocked(emptyProgress, 2)).toBe(false);
-    expect(isUnlocked(progressWith([1]), 2)).toBe(true);
-    expect(isUnlocked(progressWith([1]), 3)).toBe(false);
+  it('un mundo dependiente sigue cerrado hasta cumplir su condición', () => {
+    // «La Cueva de las Cuentas» pide pruebas superadas de «El Río de los Números».
+    expect(isWorldUnlocked(emptyProgress, 'cuentas')).toBe(false);
+    expect(isWorldUnlocked(progressWith(idsOf('numeros')), 'cuentas')).toBe(true);
+  });
+
+  it('el requisito se recorta a las pruebas que existen de verdad', () => {
+    // Los mundos se dimensionaron para cien pruebas. Mientras el catálogo se
+    // llena por fases, un mundo con menos pruebas que su requisito quedaría
+    // cerrado para siempre si no se recortase.
+    for (const world of WORLDS) {
+      if (world.unlock.kind !== 'world') continue;
+      const source = gamesOfWorld(world.unlock.world);
+      expect(isWorldUnlocked(progressWith(source.map((g) => g.id)), world.id), world.name).toBe(
+        true,
+      );
+    }
+  });
+
+  it('la torre del trofeo se abre al llevar superado el resto del catálogo', () => {
+    const rest = GAMES.filter((game) => game.world !== 'especial').map((game) => game.id);
+    expect(isWorldUnlocked(emptyProgress, 'especial')).toBe(false);
+    expect(isWorldUnlocked(progressWith(rest), 'especial')).toBe(true);
+  });
+});
+
+describe('desbloqueo de pruebas', () => {
+  it('la primera prueba de cada mundo abierto está disponible sin jugar nada', () => {
+    for (const world of populatedWorlds()) {
+      if (!isWorldUnlocked(emptyProgress, world.id)) continue;
+      const first = gamesOfWorld(world.id)[0];
+      expect(isUnlocked(emptyProgress, first.id), world.name).toBe(true);
+    }
+  });
+
+  it('dentro de un mundo hay tres pruebas abiertas a la vez', () => {
+    const letras = gamesOfWorld('letras');
+    // Sin nada superado ya se puede elegir entre las tres primeras: si una no
+    // le gusta o no le sale, no se queda encallada ahí.
+    expect(isUnlocked(emptyProgress, letras[0].id)).toBe(true);
+    expect(isUnlocked(emptyProgress, letras[1].id)).toBe(true);
+    expect(isUnlocked(emptyProgress, letras[2].id)).toBe(true);
+    expect(isUnlocked(emptyProgress, letras[3].id)).toBe(false);
+  });
+
+  it('la ventana avanza al superar pruebas, sin importar cuál', () => {
+    const letras = gamesOfWorld('letras');
+    // Se salta la primera y supera la segunda: la ventana avanza igual.
+    const saltando = progressWith([letras[1].id]);
+    expect(isUnlocked(saltando, letras[3].id)).toBe(true);
+    expect(isUnlocked(saltando, letras[4].id)).toBe(false);
+  });
+
+  it('no abre pruebas de un mundo que sigue cerrado', () => {
+    // La ventana es dentro del mundo; no se salta la condición del mundo.
+    for (const game of gamesOfWorld('cuentas').slice(0, 3)) {
+      expect(isUnlocked(emptyProgress, game.id)).toBe(false);
+    }
+  });
+
+  it('las cadenas ya no cruzan de un mundo a otro', () => {
+    // Regresión del desbloqueo lineal: la prueba 2 exigía la 1 solo porque
+    // eran consecutivas en el catálogo, aunque son de mundos distintos.
+    expect(isUnlocked(emptyProgress, 2)).toBe(true);
+  });
+
+  it('un mundo cerrado mantiene bloqueadas todas sus pruebas', () => {
+    for (const game of gamesOfWorld('cuentas')) {
+      expect(isUnlocked(emptyProgress, game.id)).toBe(false);
+    }
+  });
+
+  it('una prueba ya superada no se vuelve a bloquear nunca', () => {
+    // Aunque cambien las condiciones de los mundos con el catálogo: quitarle
+    // acceso a algo que ya se ganó sería incomprensible desde el otro lado.
+    const game = gamesOfWorld('cuentas')[0];
+    expect(isUnlocked(progressWith([game.id]), game.id)).toBe(true);
+  });
+
+  it('una prueba que no existe no está desbloqueada', () => {
+    expect(isUnlocked(emptyProgress, 9999)).toBe(false);
+  });
+});
+
+describe('progreso por mundo', () => {
+  it('cuenta las pruebas superadas de cada mundo', () => {
+    const letras = gamesOfWorld('letras');
+    const entry = worldProgress(progressWith([letras[0].id]), 'letras')!;
+    expect(entry.total).toBe(letras.length);
+    expect(entry.completed).toBe(1);
+    expect(entry.done).toBe(false);
+  });
+
+  it('marca el mundo como terminado al superarlo entero (medalla)', () => {
+    const entry = worldProgress(progressWith(idsOf('letras')), 'letras')!;
+    expect(entry.done).toBe(true);
+  });
+
+  it('solo lista los mundos que tienen pruebas', () => {
+    const listed = allWorldProgress(emptyProgress);
+    expect(listed.every((entry) => entry.total > 0)).toBe(true);
+    expect(listed.map((entry) => entry.world.id)).toEqual(populatedWorlds().map((w) => w.id));
+  });
+
+  it('el mundo en curso es el primero abierto y sin terminar', () => {
+    expect(currentWorldId(emptyProgress)).toBe(populatedWorlds()[0].id);
+    // Con un mundo empezado a medias, ese pasa a ser el mundo en curso.
+    const started = progressWith([gamesOfWorld('numeros')[0].id]);
+    expect(currentWorldId(started)).toBe('numeros');
   });
 });
 
@@ -67,7 +188,7 @@ describe('dificultad escalonada', () => {
     expect(tierFor(emptyProgress, 3)).toBe(0);
   });
 
-  it('sube de tier cada 3 partidas, con tope en 2', () => {
+  it('sube de tier cada 3 partidas, con tope en 3', () => {
     let progress = emptyProgress;
     for (let i = 0; i < 3; i++) progress = incrementPlayCount(progress, 3);
     expect(tierFor(progress, 3)).toBe(1);
@@ -75,8 +196,11 @@ describe('dificultad escalonada', () => {
     for (let i = 0; i < 3; i++) progress = incrementPlayCount(progress, 3);
     expect(tierFor(progress, 3)).toBe(2);
 
+    for (let i = 0; i < 3; i++) progress = incrementPlayCount(progress, 3);
+    expect(tierFor(progress, 3)).toBe(3);
+
     for (let i = 0; i < 30; i++) progress = incrementPlayCount(progress, 3);
-    expect(tierFor(progress, 3)).toBe(2);
+    expect(tierFor(progress, 3)).toBe(3);
   });
 
   it('el contador es independiente por prueba', () => {
@@ -84,6 +208,38 @@ describe('dificultad escalonada', () => {
     progress = incrementPlayCount(progress, 1);
     expect(progress.playCounts).toEqual({ 1: 2 });
     expect(tierFor(progress, 2)).toBe(0);
+  });
+});
+
+describe('récord de la maratón', () => {
+  it('empieza a cero y solo guarda la marca si mejora', () => {
+    expect(emptyProgress.bestMarathon).toBe(0);
+    const primera = recordMarathon(emptyProgress, 7);
+    expect(primera.bestMarathon).toBe(7);
+    // Una tanda peor no borra la buena, y devuelve el mismo objeto.
+    const peor = recordMarathon(primera, 3);
+    expect(peor).toBe(primera);
+    expect(recordMarathon(primera, 9).bestMarathon).toBe(9);
+  });
+
+  it('sobrevive a una recarga', () => {
+    localStorage.clear();
+    saveProgress(recordMarathon(progressWith([1]), 12), localStorage);
+    expect(loadProgress(localStorage).bestMarathon).toBe(12);
+  });
+
+  it('un progreso guardado antes de que existiera la maratón se lee como cero', () => {
+    // Migración aditiva, igual que en su día con playCounts: nada de subir la
+    // versión del almacenamiento ni de perder lo que ya había.
+    localStorage.clear();
+    localStorage.setItem(
+      'bosque_magico_progress_v2',
+      JSON.stringify({ version: 2, completed: [1, 2], playCounts: { 1: 3 } }),
+    );
+    const cargado = loadProgress(localStorage);
+    expect(cargado.bestMarathon).toBe(0);
+    expect(cargado.completed).toEqual([1, 2]);
+    expect(cargado.playCounts).toEqual({ 1: 3 });
   });
 });
 
@@ -105,12 +261,42 @@ describe('persistencia', () => {
     expect(loadProgress(localStorage)).toEqual(emptyProgress);
   });
 
-  it('descarta ids fuera de rango o de tipo incorrecto', () => {
+  it('descarta ids que no existen en el catálogo o de tipo incorrecto', () => {
+    const inexistente = Math.max(...GAMES.map((g) => g.id)) + 1;
     localStorage.setItem(
       'bosque_magico_progress_v2',
-      JSON.stringify({ completed: [1, 99, -3, 'dos', null, 2, 2] }),
+      JSON.stringify({ completed: [1, inexistente, -3, 'dos', null, 2, 2] }),
     );
     expect(loadProgress(localStorage)).toEqual(progressWith([1, 2]));
+  });
+
+  it('un progreso ya guardado sobrevive intacto a la recarga', () => {
+    // El caso concreto que hay que proteger al reestructurar el catálogo: lo
+    // que la niña ya tenía guardado antes del cambio. El formato de
+    // `bosque_magico_progress_v2` no se toca y los ids 1..19 no se reasignan.
+    const guardado = { version: 2, completed: [1, 2, 3], playCounts: { 1: 5, 2: 2, 3: 7 } };
+    localStorage.setItem('bosque_magico_progress_v2', JSON.stringify(guardado));
+
+    const loaded = loadProgress(localStorage);
+    expect(loaded.completed).toEqual([1, 2, 3]);
+    expect(loaded.playCounts).toEqual({ 1: 5, 2: 2, 3: 7 });
+    // Y la dificultad escalonada sigue donde estaba.
+    expect(tierFor(loaded, 3)).toBe(2);
+  });
+
+  it('conserva íntegro el progreso de todas las pruebas del catálogo', () => {
+    // Regresión de pérdida de datos: `sanitize` validaba contra `TOTAL_GAMES`
+    // en vez de contra los ids reales. Funcionaba de casualidad porque los
+    // ids eran 1..19 y había 19 pruebas; en cuanto el catálogo tenga huecos
+    // de id, esa versión borraba en silencio las pruebas superadas y las
+    // pegatinas ganadas al recargar.
+    const completed = GAMES.map((g) => g.id);
+    const playCounts = Object.fromEntries(GAMES.map((g) => [g.id, 4]));
+    saveProgress({ completed, playCounts, bestMarathon: 0 }, localStorage);
+
+    const loaded = loadProgress(localStorage);
+    expect(loaded.completed).toEqual(completed);
+    expect(loaded.playCounts).toEqual(playCounts);
   });
 
   it('migra un progreso v2 sin playCounts a un objeto vacío', () => {

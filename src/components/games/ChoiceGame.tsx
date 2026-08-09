@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { OptionButton } from '../OptionButton';
 import type { OptionState } from '../OptionButton';
 import { PromptView } from '../PromptView';
+import { optionGridClass } from './optionGrid';
 import { playSound } from '../../lib/audio';
 import { defaultRng, pick } from '../../lib/random';
 import type { Rng } from '../../lib/random';
@@ -18,7 +19,7 @@ interface ChoiceGameProps {
   onSpeak: (text: string) => void;
   onWin: () => void;
   rng?: Rng;
-  /** Nivel de dificultad numérica (0-2) — ver `progress.ts:tierFor`. */
+  /** Nivel de dificultad (0-3) — ver `progress.ts:tierFor`. */
   tier?: number;
 }
 
@@ -95,9 +96,7 @@ export function ChoiceGame({
       </p>
 
       <div
-        className={`grid gap-3 md:gap-4 w-full ${
-          round.options.length === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'
-        }`}
+        className={`grid gap-3 md:gap-4 w-full ${optionGridClass(round.options.length)}`}
       >
         {round.options.map((option) => (
           <OptionButton

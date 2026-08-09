@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { PromptView } from './PromptView';
 import { Shape } from './Shape';
 import { playSound } from '../lib/audio';
-import { GAMES } from '../lib/games/catalog';
+import { unhandled } from '../lib/exhaustive';
+import { GAMES, populatedWorlds } from '../lib/games/catalog';
 import { generateRounds } from '../lib/games/generators';
 import { defaultRng } from '../lib/random';
 import type { Option } from '../lib/games/types';
@@ -62,11 +63,22 @@ export function PrintableWorksheets({ onBack }: PrintableWorksheetsProps) {
             onChange={(event) => setGameId(Number(event.target.value))}
             className="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm font-bold bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-400"
           >
-            {PRINTABLE_GAMES.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.id}. {g.title}
-              </option>
-            ))}
+            {/* Agrupado por mundo: una lista plana de cien opciones es
+                inmanejable para encontrar la ficha que se busca. */}
+            {populatedWorlds().map((world) => {
+              const games = PRINTABLE_GAMES.filter((g) => g.world === world.id);
+              if (games.length === 0) return null;
+
+              return (
+                <optgroup key={world.id} label={world.name}>
+                  {games.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.id}. {g.title}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
           </select>
 
           <button
@@ -127,20 +139,43 @@ export function PrintableWorksheets({ onBack }: PrintableWorksheetsProps) {
 function WorksheetOption({ option }: { option: Option }) {
   return (
     <span className="w-16 h-16 border-2 border-slate-300 rounded-2xl flex items-center justify-center">
-      {option.display.kind === 'text' && (
-        <span className="text-3xl font-extrabold text-slate-700">{option.display.text}</span>
-      )}
-      {option.display.kind === 'emoji' && <span className="text-3xl">{option.display.emoji}</span>}
-      {option.display.kind === 'shape' && <Shape shape={option.display.shape} className="w-10 h-10" />}
-      {option.display.kind === 'group' && (
+      <WorksheetDisplay display={option.display} />
+    </span>
+  );
+}
+
+/**
+ * Es el sitio que se olvida al añadir un `display` nuevo: sin su `case`, la
+ * ficha imprimible sale con recuadros vacíos. El guard `unhandled` lo
+ * convierte en error de compilación.
+ */
+function WorksheetDisplay({ display }: { display: Option['display'] }) {
+  switch (display.kind) {
+    case 'text':
+      return (
+        <span className={display.text.length <= 2 ? 'text-3xl font-extrabold text-slate-700' : 'text-sm font-bold text-slate-700 text-center px-1'}>
+          {display.text}
+        </span>
+      );
+
+    case 'emoji':
+      return <span className="text-3xl">{display.emoji}</span>;
+
+    case 'shape':
+      return <Shape shape={display.shape} color={display.color} className="w-10 h-10" />;
+
+    case 'group':
+      return (
         <span className="flex flex-wrap justify-center gap-0.5 p-1">
-          {option.display.items.map((emoji, i) => (
+          {display.items.map((emoji, i) => (
             <span key={i} className="text-sm leading-none">
               {emoji}
             </span>
           ))}
         </span>
-      )}
-    </span>
-  );
+      );
+
+    default:
+      return unhandled(display);
+  }
 }

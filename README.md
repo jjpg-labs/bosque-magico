@@ -1,8 +1,9 @@
 # 🌳 El Bosque Mágico de los Bichitos
 
 Juego educativo en español para peques de 3 a 6 años: letras, números, sumas, restas,
-formas geométricas, lógica, colores, sonidos, emociones y rimas, repartidos en 19
-pruebas con un álbum de pegatinas.
+formas geométricas, lógica, medidas y tiempo, naturaleza, cuerpo, emociones, música
+y oficios, repartidos en **100 pruebas** agrupadas por mundos, con un álbum de
+pegatinas.
 
 **Sin anuncios, sin cuentas, sin servidor y sin recogida de datos.** Se instala como
 app en el móvil o la tablet y funciona sin conexión.
@@ -14,7 +15,13 @@ app en el móvil o la tablet y funciona sin conexión.
 Cada prueba del mapa plantea **preguntas generadas al azar**: la abeja no siempre
 empieza por la misma letra ni hay siempre cinco mariquitas, así que no se puede
 aprobar memorizando dónde está el botón bueno. Al superar las rondas de una prueba
-se gana su pegatina y se abre la siguiente.
+se gana su pegatina y avanza la ventana de pruebas abiertas de su mundo.
+
+El mapa se navega en **dos niveles**: primero los mundos, y al tocar uno, sus
+pruebas. Cuatro mundos están abiertos desde el primer día y los demás se van
+abriendo con el juego. Dentro de cada mundo hay **tres pruebas abiertas a la vez**,
+así que nunca se queda atascada detrás de una que no le apetezca ese día. El mundo en
+el que iba aparece el primero y marcado.
 
 Todas las instrucciones se **leen en voz alta** (síntesis de voz del navegador, en
 español), porque a esa edad todavía no se lee. El botón 🔊 las repite.
@@ -24,18 +31,32 @@ tienen **dificultad escalonada**: cada 3 partidas jugadas de la misma prueba el 
 sube un nivel (hasta 2 niveles por encima del inicial), así que sigue dando trabajo
 según va creciendo quien juega.
 
-| Prueba | Qué trabaja                       | Prueba | Qué trabaja                           |
-| ------ | --------------------------------- | ------ | ------------------------------------- |
-| 1      | Letra inicial de una palabra      | 11     | Vocal inicial (conciencia fonológica) |
-| 2      | Contar (escala con el nivel)      | 12     | Forma geométrica de objetos reales    |
-| 3      | Sumas (escala con el nivel)       | 13     | Desafío final combinado               |
-| 4      | Restas (escala con el nivel)      | 14     | Colores                               |
-| 5      | Reconocer figuras geométricas     | 15     | Sonidos de animales (adivina cuál es) |
-| 6      | Patrones (ABAB, AABAAB, ABC)      | 16     | Emociones (caras y cómo se sienten)   |
-| 7      | Clasificar y encontrar el intruso | 17     | Rimas (conciencia fonológica)         |
-| 8      | Memoria (parejas)                 | 18     | Comparar tamaños (grande / pequeño)   |
-| 9      | Comparar cantidades (más / menos) | 19     | Rutina del día (orden de las cosas)   |
-| 10     | Serie numérica                    |        |                                       |
+| Mundo                        | Qué trabaja                                          | Pruebas | Se abre al…           |
+| ---------------------------- | ---------------------------------------------------- | ------: | --------------------- |
+| 🔤 El Claro de las Letras    | Letras, vocales, sílabas, rimas y abecedario         |      14 | siempre abierto       |
+| 🔢 El Río de los Números     | Contar, comparar, series y ordinales                 |      12 | siempre abierto       |
+| ➕ La Cueva de las Cuentas   | Sumar, restar, repartir y problemas hablados         |       9 | 3 pruebas de números  |
+| 🔷 La Montaña de las Formas  | Figuras, colores y orientación en el espacio         |      11 | siempre abierto       |
+| 🧩 El Laberinto de la Lógica | Patrones, clasificar, analogías y memoria            |      12 | 3 pruebas de formas   |
+| 📏 El Prado de las Medidas   | Tamaño, peso, días, estaciones y secuencias          |      11 | 3 pruebas de números  |
+| 🦊 El Bosque de los Animales | Animales, hábitats, plantas y tiempo atmosférico     |      11 | siempre abierto       |
+| 🧒 La Casa de los Peques     | Cuerpo, sentidos, comida e higiene                   |       8 | 3 pruebas de animales |
+| 💛 La Plaza de las Emociones | Emociones, convivencia y música                      |       6 | siempre abierto       |
+| 🚂 La Ciudad de los Oficios  | Oficios, transportes y el pueblo                     |       4 | 3 pruebas de la casa  |
+| 🏆 La Torre del Trofeo       | Desafío combinado y los dos modos sin fin            |       3 | 20 pruebas en total   |
+
+Los dos modos de la torre son lo que hace que el juego no se acabe cuando se acaba el
+catálogo:
+
+- **La Aventura del Día**: ocho rondas que mezclan las pruebas ya superadas, con la
+  aleatoriedad sembrada con la fecha. La misma aventura durante todo el día —se puede
+  contar en la merienda y volver a jugarla igual— y distinta mañana.
+- **Maratón Amable**: rondas sin fin, con el contador de aciertos y el récord a
+  batir. **No se pierde nunca** y se sale cuando se quiere; un fallo no resta.
+
+Las condiciones de apertura se recortan a las pruebas que existen de verdad, así que
+ningún mundo queda cerrado por su propia condición, y un mundo sin pruebas todavía no
+se pinta en el mapa.
 
 ### Fichas para imprimir
 
@@ -47,6 +68,10 @@ cada pulsación de «Otra ficha» produce seis ejercicios nuevos de la prueba el
 ## Desarrollo
 
 Requiere Node.js 20 o superior.
+
+> ¿Quieres añadir una prueba nueva? La receta completa está en
+> [`docs/adding-a-prueba.md`](docs/adding-a-prueba.md) — pensada tanto para
+> seguirla a mano como para dársela a un asistente de IA (Claude, Gemini...).
 
 ```bash
 npm install
@@ -64,24 +89,42 @@ npm run icons      # regenera los iconos PNG desde assets/icon.svg
 ```
 src/
 ├── lib/
-│   ├── audio.ts          # efectos de sonido (Web Audio, un único contexto)
-│   ├── speech.ts         # síntesis de voz en español
-│   ├── progress.ts       # progreso en localStorage
-│   ├── random.ts         # aleatoriedad con semilla inyectable (tests)
+│   ├── audio.ts              # efectos de sonido (Web Audio, un único contexto)
+│   ├── speech.ts             # síntesis de voz en español
+│   ├── progress.ts           # progreso en localStorage y desbloqueo por mundo
+│   ├── random.ts             # aleatoriedad con semilla inyectable (tests)
 │   └── games/
-│       ├── data.ts       # animales, palabras, formas, categorías
-│       ├── generators.ts # un generador de preguntas por prueba
-│       ├── catalog.ts    # las 19 pruebas y sus pegatinas
-│       └── types.ts
-├── components/           # UI (mapa, juego, álbum, fichas, avatar)
+│       ├── types.ts          # Round, Option, Prompt, GameDefinition, World…
+│       ├── data/             # el contenido, un fichero por mundo
+│       │   ├── index.ts      #   barril: una línea por mundo
+│       │   ├── comun.ts      #   lo compartido entre mundos
+│       │   └── <mundo>.ts
+│       ├── generators/       # cómo se arma cada pregunta
+│       │   ├── index.ts      #   barril
+│       │   ├── factories.ts  #   las 8 fábricas (API congelada)
+│       │   ├── options.ts    #   piezas para montar las opciones
+│       │   ├── rounds.ts     #   generateRounds y el dedupe por ejercicio
+│       │   └── <mundo>.ts
+│       └── catalog/          # qué pruebas hay y qué pegatina dan
+│           ├── index.ts      #   barril: GAMES, STICKERS, nextGameId…
+│           ├── worlds.ts     #   la tabla de mundos
+│           └── <mundo>.ts
+├── components/               # UI (mapa, juego, álbum, fichas, avatar)
 ├── hooks/useSpeech.ts
 └── test/
 ```
 
-Los generadores están separados de la interfaz a propósito: son funciones puras que
-reciben un `rng`, así que los tests los ejecutan con **200 semillas distintas** y
-comprueban que cada ronda tiene exactamente una respuesta correcta, que la suma
-cuadra con las manzanas dibujadas, que la resta nunca da negativo, etc.
+Está troceado por mundo a propósito: un lote de contenido nuevo son tres ficheros
+propios y una línea en cada barril, así que varias personas pueden escribir pruebas
+a la vez sin pisarse.
+
+Los generadores están separados de la interfaz: son funciones puras que reciben un
+`rng`, así que los tests los ejecutan con **200 semillas distintas** y comprueban
+que cada ronda tiene exactamente una respuesta correcta, que ninguna opción repite
+lo que se ve, que la suma cuadra con las manzanas dibujadas, que la resta nunca da
+negativo, etc. Y como la mayoría de las pruebas se montan con una de las **ocho
+fábricas** de `factories.ts`, esos invariantes están garantizados por construcción
+en vez de comprobados a posteriori.
 
 ---
 

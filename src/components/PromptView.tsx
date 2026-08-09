@@ -1,5 +1,6 @@
 import { Shape } from './Shape';
-import type { Prompt } from '../lib/games/types';
+import { unhandled } from '../lib/exhaustive';
+import type { Prompt, ScenePosition } from '../lib/games/types';
 
 /**
  * Rejilla de emojis agrupados de cinco en cinco.
@@ -90,8 +91,11 @@ export function PromptView({ prompt }: { prompt: Prompt }) {
 
     case 'two-groups':
       return (
-        <div className="flex items-center justify-center gap-4">
+        <div className="bg-teal-50 border-2 border-teal-200 rounded-3xl p-5 flex items-center justify-center gap-4">
           <EmojiGrid items={prompt.a} />
+          <span className="text-3xl font-bold text-teal-400" aria-hidden="true">
+            |
+          </span>
           <EmojiGrid items={prompt.b} />
         </div>
       );
@@ -110,5 +114,64 @@ export function PromptView({ prompt }: { prompt: Prompt }) {
           <span className="text-xl font-bold text-amber-800">{prompt.word}</span>
         </div>
       );
+
+    case 'scene':
+      return <SceneView {...prompt} />;
+
+    default:
+      return unhandled(prompt);
   }
+}
+
+/** Los tres pisos de la torre, de arriba abajo. */
+const FLOORS: ScenePosition[] = ['arriba', 'medio', 'abajo'];
+
+/**
+ * La escena de las pruebas de orientación: un objeto colocado respecto a un
+ * contenedor.
+ *
+ * Las posiciones «alrededor» se dibujan con una rejilla de tres por tres con
+ * el contenedor en el centro; así «encima» queda de verdad encima y no solo
+ * dicho con palabras. «Dentro» es el único caso que se superpone: el objeto
+ * va sobre el contenedor y más pequeño, como si asomara.
+ */
+function SceneView({ container, item, position }: Extract<Prompt, { kind: 'scene' }>) {
+  if (FLOORS.includes(position)) {
+    return (
+      <div className="bg-indigo-50 border-2 border-indigo-200 rounded-3xl p-4 inline-flex flex-col gap-1.5">
+        {FLOORS.map((floor) => (
+          <div
+            key={floor}
+            className="w-28 h-16 rounded-2xl border-2 border-indigo-200 bg-white flex items-center justify-center"
+          >
+            <span className="text-4xl leading-none">{floor === position ? item : ''}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const CELLS: Record<string, string> = {
+    encima: 'col-start-2 row-start-1',
+    debajo: 'col-start-2 row-start-3',
+    izquierda: 'col-start-1 row-start-2',
+    derecha: 'col-start-3 row-start-2',
+    fuera: 'col-start-3 row-start-1',
+  };
+
+  return (
+    <div className="bg-indigo-50 border-2 border-indigo-200 rounded-3xl p-4 inline-grid grid-cols-3 grid-rows-3 place-items-center gap-1">
+      <span className="col-start-2 row-start-2 text-7xl leading-none relative">
+        {container}
+        {position === 'dentro' && (
+          <span className="absolute inset-0 flex items-center justify-center text-4xl leading-none">
+            {item}
+          </span>
+        )}
+      </span>
+      {position !== 'dentro' && (
+        <span className={`${CELLS[position]} text-4xl leading-none`}>{item}</span>
+      )}
+    </div>
+  );
 }

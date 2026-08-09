@@ -1,5 +1,6 @@
 import { Shape } from './Shape';
-import type { Option } from '../lib/games/types';
+import { unhandled } from '../lib/exhaustive';
+import type { EmojiScale, Option } from '../lib/games/types';
 
 export type OptionState = 'idle' | 'wrong' | 'right';
 
@@ -16,6 +17,18 @@ const STATE_CLASSES: Record<OptionState, string> = {
   // Una opción descartada se atenúa en vez de desaparecer: quitarla movería
   // el resto de botones justo cuando la niña está mirando dónde tocar.
   wrong: 'bg-slate-100 border-slate-200 opacity-40',
+};
+
+/**
+ * Los cinco tamaños tienen que verse claramente escalonados de un vistazo:
+ * ordenar de pequeño a grande no puede depender de mirar dos veces.
+ */
+const EMOJI_SCALES: Record<EmojiScale, string> = {
+  xs: 'text-xl',
+  sm: 'text-3xl',
+  md: 'text-5xl',
+  lg: 'text-7xl',
+  xl: 'text-8xl',
 };
 
 export function OptionButton({ option, state, disabled, onSelect }: OptionButtonProps) {
@@ -35,37 +48,53 @@ export function OptionButton({ option, state, disabled, onSelect }: OptionButton
         ${STATE_CLASSES[state]}
       `}
     >
-      {option.display.kind === 'text' && (
-        <span className="text-4xl md:text-5xl font-extrabold text-emerald-800">
-          {option.display.text}
+      <OptionDisplay display={option.display} />
+    </button>
+  );
+}
+
+/**
+ * Una letra o un número caben a `text-5xl`, pero una palabra como
+ * «Con sueño» se sale del botón. El tamaño baja según la longitud para que
+ * las respuestas puedan ser palabras y no solo símbolos.
+ */
+function textSizeFor(text: string): string {
+  if (text.length <= 2) return 'text-4xl md:text-5xl';
+  if (text.length <= 6) return 'text-2xl md:text-3xl';
+  return 'text-lg md:text-xl';
+}
+
+function OptionDisplay({ display }: { display: Option['display'] }) {
+  switch (display.kind) {
+    case 'text':
+      return (
+        <span className={`font-extrabold text-emerald-800 text-center ${textSizeFor(display.text)}`}>
+          {display.text}
         </span>
-      )}
+      );
 
-      {option.display.kind === 'emoji' && (
-        <span
-          className={`leading-none ${
-            option.display.scale === 'lg'
-              ? 'text-7xl'
-              : option.display.scale === 'sm'
-                ? 'text-2xl'
-                : 'text-5xl'
-          }`}
-        >
-          {option.display.emoji}
+    case 'emoji':
+      return (
+        <span className={`leading-none ${EMOJI_SCALES[display.scale ?? 'md']}`}>
+          {display.emoji}
         </span>
-      )}
+      );
 
-      {option.display.kind === 'shape' && <Shape shape={option.display.shape} className="w-16 h-16" />}
+    case 'shape':
+      return <Shape shape={display.shape} color={display.color} className="w-16 h-16" />;
 
-      {option.display.kind === 'group' && (
+    case 'group':
+      return (
         <span className="flex flex-wrap justify-center gap-1.5 max-w-[10rem]">
-          {option.display.items.map((emoji, i) => (
+          {display.items.map((emoji, i) => (
             <span key={i} className="text-3xl leading-none">
               {emoji}
             </span>
           ))}
         </span>
-      )}
-    </button>
-  );
+      );
+
+    default:
+      return unhandled(display);
+  }
 }
