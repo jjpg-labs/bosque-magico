@@ -73,7 +73,12 @@ export function GameMap({ progress, onSpeak, onSelectGame }: GameMapProps) {
             Elige un mundo y sigue la aventura ({totalDone} de {total} pruebas)
           </p>
         </div>
-        <GirlAvatar size="lg" className="hidden sm:block shrink-0" />
+        {/* En un envoltorio y no con `hidden sm:block` en el propio avatar:
+            `GirlAvatar` lleva `inline-block` fijo y ganaba a `hidden`, así que
+            a 360 px se comía 96 de los 328 disponibles y partía el título. */}
+        <span className="hidden sm:block shrink-0">
+          <GirlAvatar size="lg" />
+        </span>
       </div>
 
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 w-full list-none p-0">
