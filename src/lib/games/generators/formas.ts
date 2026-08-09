@@ -13,6 +13,7 @@ import {
   SHAPE_COLOR_NAMES,
   SHAPE_OBJECTS,
   SHAPE_SIDES,
+  shapeArticle,
 } from '../data';
 import { distinctDistractors } from './factories';
 import { buildOptions, textOption, distractorCount } from './options';
@@ -37,10 +38,11 @@ export function shapeOptions(rng: Rng, answer: ShapeName, tier = 0): Option[] {
 /** Se ve el nombre y hay que tocar la figura. */
 const genShapeByName: RoundGenerator = (rng, tier = 0) => {
   const answer = pick(rng, SHAPES);
+  const { el, tocalo } = shapeArticle(answer);
 
   return {
-    question: `Toca el ${answer}`,
-    spoken: `Busca el ${answer} y tócalo.`,
+    question: `Toca ${el} ${answer}`,
+    spoken: `Busca ${el} ${answer} y ${tocalo}.`,
     prompt: { kind: 'none' },
     options: shapeOptions(rng, answer, tier),
   };
@@ -125,6 +127,7 @@ export const genShapeSides: RoundGenerator = (rng, tier = 0) => {
 
 export const genColorShapes: RoundGenerator = (rng) => {
   const shape = pick(rng, SHAPES);
+  const { el, tocalo, color: concordar } = shapeArticle(shape);
   const color = pick(rng, SHAPE_COLOR_NAMES);
   // Los distractores cambian la forma o el color, nunca los dos a la vez: así
   // hay que fijarse en las dos cosas y no basta con mirar una.
@@ -132,8 +135,8 @@ export const genColorShapes: RoundGenerator = (rng) => {
   const otherColor = pick(rng, SHAPE_COLOR_NAMES.filter((c) => c !== color));
 
   return {
-    question: `Toca el ${shape} ${color}`,
-    spoken: `Busca el ${shape} de color ${color} y tócalo.`,
+    question: `Toca ${el} ${shape} ${concordar(color)}`,
+    spoken: `Busca ${el} ${shape} de color ${color} y ${tocalo}.`,
     prompt: { kind: 'none' },
     options: buildOptions(rng, [
       { label: `${shape} ${color}`, display: { kind: 'shape', shape, color }, correct: true },

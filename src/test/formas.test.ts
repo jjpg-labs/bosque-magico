@@ -80,3 +80,33 @@ describe('¿Cuántos Lados Tiene?', () => {
     }
   });
 });
+
+
+describe('concordancia de las figuras', () => {
+  it('la estrella lleva artículo y color en femenino', () => {
+    // «Toca el estrella morado» era doble falta, y esto es un juego para
+    // aprender lengua. El resto de las figuras son masculinas.
+    const enunciados = new Set<string>();
+    for (const id of [5, 54]) {
+      for (let seed = 1; seed <= 1500; seed++) {
+        const round = generatorOf(id)(seededRng(seed));
+        enunciados.add(round.question);
+        enunciados.add(round.spoken);
+      }
+    }
+
+    for (const frase of enunciados) {
+      if (!frase.includes('estrella')) continue;
+      expect(frase, frase).not.toMatch(/\bel estrella\b/);
+      expect(frase, frase).not.toMatch(/\btócalo\b/);
+      // El color solo concuerda en el enunciado escrito: en el hablado va
+      // «de color morado», que concuerda con «color» y es correcto así.
+      if (frase.startsWith('Toca ')) {
+        expect(frase, frase).not.toMatch(/\b(rojo|amarillo|morado)\b/);
+      }
+    }
+
+    // Y que de verdad haya salido alguna estrella, no que pase por vacío.
+    expect([...enunciados].some((f) => f.includes('la estrella'))).toBe(true);
+  });
+});
