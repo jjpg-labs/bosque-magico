@@ -15,7 +15,7 @@ import {
   WEIGHT_PAIRS,
 } from '../data';
 import { distinctDistractors, emojiToName, orderedSequence } from './factories';
-import { buildOptions, textOption } from './options';
+import { buildOptions, textOption, distractorCount } from './options';
 import type { RoundGenerator } from '../types';
 
 // --- 9. Más o menos ----------------------------------------------------------
@@ -74,7 +74,7 @@ export const genSize: RoundGenerator = (rng) => {
 
 // --- 19. La rutina del día ---------------------------------------------------
 
-export const genRoutine: RoundGenerator = (rng) => {
+export const genRoutine: RoundGenerator = (rng, tier = 0) => {
   const windowLen = 4;
   const start = randomInt(rng, 0, ROUTINE_STEPS.length - windowLen);
   const window = ROUTINE_STEPS.slice(start, start + windowLen);
@@ -84,7 +84,7 @@ export const genRoutine: RoundGenerator = (rng) => {
   const others = sample(
     rng,
     ROUTINE_STEPS.filter((s) => s.label !== answer.label),
-    3,
+    distractorCount(tier),
   );
 
   return {
@@ -205,7 +205,7 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export const genWeekdays: RoundGenerator = (rng) => {
+export const genWeekdays: RoundGenerator = (rng, tier = 0) => {
   const index = randomInt(rng, 0, WEEKDAYS.length - 1);
   const day = WEEKDAYS[index];
   const askNext = rng() < 0.5;
@@ -217,7 +217,7 @@ export const genWeekdays: RoundGenerator = (rng) => {
   const others = sample(
     rng,
     WEEKDAYS.filter((other) => other !== answer),
-    3,
+    distractorCount(tier),
   );
   // Los nombres de los días no caben dibujados en fila a tamaño de enunciado,
   // así que la serie va dicha y no pintada: el enunciado nombra el día de
@@ -246,12 +246,12 @@ export const genSeasons: RoundGenerator = emojiToName(SEASON_CLUES, {
 
 // --- 72. De día y de noche -------------------------------------------------------------
 
-export const genDayNight: RoundGenerator = (rng) => {
+export const genDayNight: RoundGenerator = (rng, tier = 0) => {
   const byDay = rng() < 0.5;
   const family = byDay ? DAY_THINGS : NIGHT_THINGS;
   const strangers = byDay ? NIGHT_THINGS : DAY_THINGS;
   const answer = pick(rng, family);
-  const others = distinctDistractors(rng, strangers, (item) => item.emoji, [], 3);
+  const others = distinctDistractors(rng, strangers, (item) => item.emoji, [], distractorCount(tier));
 
   return {
     question: byDay ? '¿Cuál es de día?' : '¿Cuál es de noche?',

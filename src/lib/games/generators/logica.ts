@@ -19,7 +19,7 @@ import {
   pairMatch,
 } from './factories';
 import type { Item } from './factories';
-import { buildOptions } from './options';
+import { buildOptions, distractorCount } from './options';
 import type { RoundGenerator } from '../types';
 
 function repeatToLength(motif: string[], length: number): string[] {
@@ -28,7 +28,7 @@ function repeatToLength(motif: string[], length: number): string[] {
 
 // --- 6. Patrones -------------------------------------------------------------
 
-export const genPatterns: RoundGenerator = (rng) => {
+export const genPatterns: RoundGenerator = (rng, tier = 0) => {
   const motifLength = pick(rng, [2, 2, 3]);
   const motif = sample(rng, COUNTABLES, motifLength);
   // Se muestran 2 ciclos completos más un desplazamiento aleatorio: si
@@ -39,7 +39,7 @@ export const genPatterns: RoundGenerator = (rng) => {
   const visibleLength = motifLength * 2 + extra;
   const visible = repeatToLength(motif, visibleLength);
   const answer = motif[visibleLength % motif.length];
-  const others = sample(rng, COUNTABLES.filter((e) => e !== answer), 3);
+  const others = sample(rng, COUNTABLES.filter((e) => e !== answer), distractorCount(tier));
 
   return {
     question: '¿Qué viene después?',
@@ -58,9 +58,9 @@ export const genPatterns: RoundGenerator = (rng) => {
 
 // --- 7. El intruso -----------------------------------------------------------
 
-export const genOddOne: RoundGenerator = (rng) => {
+export const genOddOne: RoundGenerator = (rng, tier = 0) => {
   const [family, stranger] = sample(rng, CATEGORIES, 2);
-  const familyItems = sample(rng, family.items, 3);
+  const familyItems = sample(rng, family.items, distractorCount(tier));
   const intruder = pick(rng, stranger.items);
 
   return {
@@ -80,7 +80,7 @@ export const genOddOne: RoundGenerator = (rng) => {
 
 // --- 57. Patrón de colores -------------------------------------------------------
 
-export const genColorPattern: RoundGenerator = (rng) => {
+export const genColorPattern: RoundGenerator = (rng, tier = 0) => {
   const motifLength = pick(rng, [2, 2, 3]);
   const motif = sample(rng, COLORS, motifLength);
   // Mismo truco que en «Patrones Divertidos»: se enseñan dos ciclos completos
@@ -95,7 +95,7 @@ export const genColorPattern: RoundGenerator = (rng) => {
   const others = sample(
     rng,
     COLORS.filter((color) => color.name !== answer.name),
-    3,
+    distractorCount(tier),
   );
 
   return {
@@ -115,7 +115,7 @@ export const genColorPattern: RoundGenerator = (rng) => {
 
 // --- 58. El hueco del medio --------------------------------------------------------
 
-export const genMiddleGap: RoundGenerator = (rng) => {
+export const genMiddleGap: RoundGenerator = (rng, tier = 0) => {
   const motifLength = pick(rng, [2, 2, 3]);
   const motif = sample(rng, COUNTABLES, motifLength);
   const visibleLength = motifLength * 2 + randomInt(rng, 1, motifLength);
@@ -128,7 +128,7 @@ export const genMiddleGap: RoundGenerator = (rng) => {
   const others = sample(
     rng,
     COUNTABLES.filter((emoji) => emoji !== answer),
-    3,
+    distractorCount(tier),
   );
 
   return {
@@ -162,7 +162,7 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export const genAnalogy: RoundGenerator = (rng) => {
+export const genAnalogy: RoundGenerator = (rng, tier = 0) => {
   const analogy = pick(rng, ANALOGIES);
   // El cuarteto se plantea igual en un sentido que en el otro, así que la tabla
   // da el doble de ejercicios sin escribir ni una analogía más.
@@ -175,7 +175,7 @@ export const genAnalogy: RoundGenerator = (rng) => {
     ANALOGY_TARGETS,
     (item) => item.emoji,
     [first.emoji, second.emoji, third.emoji, answer.emoji],
-    3,
+    distractorCount(tier),
   );
 
   return {

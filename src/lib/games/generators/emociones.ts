@@ -13,7 +13,7 @@ import {
 } from '../data';
 import type { Emotion } from '../data';
 import { distinctDistractors, emojiToName } from './factories';
-import { buildOptions, textOption } from './options';
+import { buildOptions, textOption, distractorCount } from './options';
 import type { Option, RoundGenerator } from '../types';
 
 /**
@@ -27,7 +27,7 @@ function otherEmotions(rng: Rng, answer: Emotion, count: number): Emotion[] {
 
 // --- 16. ¿Cómo se siente? ----------------------------------------------------
 
-export const genEmotion: RoundGenerator = (rng) => {
+export const genEmotion: RoundGenerator = (rng, tier = 0) => {
   const answer = pick(rng, EMOTIONS);
 
   return {
@@ -36,7 +36,7 @@ export const genEmotion: RoundGenerator = (rng) => {
     prompt: { kind: 'emoji-single', item: answer.emoji },
     options: buildOptions(rng, [
       textOption(answer.name, true),
-      ...otherEmotions(rng, answer, 3).map((e) => textOption(e.name, false)),
+      ...otherEmotions(rng, answer, distractorCount(tier)).map((e) => textOption(e.name, false)),
     ]),
   };
 };
@@ -47,7 +47,7 @@ export const genEmotion: RoundGenerator = (rng) => {
  * Aquí no se ve la cara: se escucha lo que ha pasado y hay que deducirla. Es
  * el paso siguiente a reconocer la emoción en un dibujo.
  */
-export const genEmotionSituation: RoundGenerator = (rng) => {
+export const genEmotionSituation: RoundGenerator = (rng, tier = 0) => {
   const situation = pick(rng, EMOTION_SITUATIONS);
   const answer = emotion(situation.feels);
 
@@ -63,7 +63,7 @@ export const genEmotionSituation: RoundGenerator = (rng) => {
     prompt: { kind: 'none' },
     options: buildOptions(rng, [
       emotionOption(answer, true),
-      ...otherEmotions(rng, answer, 3).map((e) => emotionOption(e, false)),
+      ...otherEmotions(rng, answer, distractorCount(tier)).map((e) => emotionOption(e, false)),
     ]),
   };
 };
@@ -96,9 +96,9 @@ const genInstrumentBySight = emojiToName(INSTRUMENTS, {
 });
 
 /** Escuchando la onomatopeya, como en «¿Quién Hace Este Sonido?». */
-const genInstrumentBySound: RoundGenerator = (rng) => {
+const genInstrumentBySound: RoundGenerator = (rng, tier = 0) => {
   const answer = pick(rng, INSTRUMENTS);
-  const others = distinctDistractors(rng, INSTRUMENTS, (i) => i.emoji, answer.emoji, 3);
+  const others = distinctDistractors(rng, INSTRUMENTS, (i) => i.emoji, answer.emoji, distractorCount(tier));
 
   return {
     question: '¿Qué instrumento suena así?',
@@ -154,9 +154,9 @@ export const genClapRhythm: RoundGenerator = (rng) => {
 
 // --- 96. Las palabras mágicas -----------------------------------------------------
 
-export const genMagicWords: RoundGenerator = (rng) => {
+export const genMagicWords: RoundGenerator = (rng, tier = 0) => {
   const scene = pick(rng, MAGIC_WORDS);
-  const others = distinctDistractors(rng, MAGIC_WORD_LIST, (word) => word, scene.word, 3);
+  const others = distinctDistractors(rng, MAGIC_WORD_LIST, (word) => word, scene.word, distractorCount(tier));
 
   return {
     question: `${scene.text}. ¿Qué dices?`,

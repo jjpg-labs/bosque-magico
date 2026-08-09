@@ -27,9 +27,31 @@ const CHOICE_GAMES = GAMES.flatMap((game) => {
   return generate ? [{ ...game, generate }] : [];
 });
 
+/**
+ * Todas las rondas de todas las pruebas, **en los cuatro niveles**.
+ *
+ * Recorrer solo el nivel 0 dejaba sin comprobar justo lo que cambia al subir:
+ * con más opciones hay más ocasiones de repetir un `display` o de quedarse sin
+ * distractores en un pool corto.
+ */
+const TIERS = [0, 1, 2, 3];
+
+/**
+ * Semillas por nivel. El 0 es el que más se juega y lleva las doscientas; los
+ * demás van con sesenta, que sigue siendo mucho más de lo que hace falta para
+ * pillar un `display` repetido y deja el fichero en unos pocos segundos.
+ */
+function seedsFor(tier: number): number[] {
+  return tier === 0 ? SEEDS : SEEDS.slice(0, 60);
+}
+
 function allRounds(): Round[] {
   return CHOICE_GAMES.flatMap((game) =>
-    SEEDS.flatMap((seed) => generateRounds(game.generate!, seededRng(seed), game.roundsToWin)),
+    TIERS.flatMap((tier) =>
+      seedsFor(tier).flatMap((seed) =>
+        generateRounds(game.generate!, seededRng(seed), game.roundsToWin, tier),
+      ),
+    ),
   );
 }
 
@@ -45,6 +67,19 @@ const ALL_ROUNDS = allRounds();
 function coreOf(round: Round): string {
   const correct = round.options.find((option) => option.correct);
   return [round.question, JSON.stringify(round.prompt), JSON.stringify(correct?.display)].join('|');
+}
+
+/**
+ * ¿Ignora el generador la semilla que le pasan?
+ *
+ * Con la misma semilla, un generador normal da siempre la misma ronda. «La
+ * Aventura del Día» no: siembra su aleatoriedad con la fecha y avanza esa
+ * suya en cada llamada, para ser la misma aventura toda la jornada. Se
+ * detecta por lo que hace y no por su id, para no tener que tocar esto si
+ * mañana hay otra prueba así.
+ */
+function esFijaPorFecha(generate: (rng: ReturnType<typeof seededRng>, tier?: number) => Round) {
+  return coreOf(generate(seededRng(1), 0)) !== coreOf(generate(seededRng(1), 0));
 }
 
 /**
@@ -144,10 +179,12 @@ describe('generadores de rondas', () => {
     // Sin excepciones: con el dedupe por ejercicio, ni siquiera las pruebas de
     // pool corto repiten dentro de una misma partida.
     for (const game of CHOICE_GAMES) {
-      for (const seed of SEEDS) {
-        const rounds = generateRounds(game.generate!, seededRng(seed), game.roundsToWin);
-        const cores = new Set(rounds.map(coreOf));
-        expect(cores.size, `${game.title} (semilla ${seed})`).toBe(rounds.length);
+      for (const tier of TIERS) {
+        for (const seed of seedsFor(tier)) {
+          const rounds = generateRounds(game.generate!, seededRng(seed), game.roundsToWin, tier);
+          const cores = new Set(rounds.map(coreOf));
+          expect(cores.size, `${game.title} (semilla ${seed}, nivel ${tier})`).toBe(rounds.length);
+        }
       }
     }
   });
@@ -160,8 +197,12 @@ describe('generadores de rondas', () => {
       SEEDS.reduce((total, seed) => total + game.generate(seededRng(seed), tier).options.length, 0) /
       SEEDS.length;
 
-    const escalan = CHOICE_GAMES.filter((game) => media(game, 2) > media(game, 0) + 0.01);
-    expect(escalan.length).toBeGreaterThanOrEqual(20);
+    const escalan = CHOICE_GAMES.filter(
+      (game) => !esFijaPorFecha(game.generate) && media(game, 2) > media(game, 0) + 0.01,
+    );
+    // Sesenta y cinco crecen en opciones; las demás que escalan lo hacen
+    // estirando su rango numérico, que este test no mira.
+    expect(escalan.length).toBeGreaterThanOrEqual(60);
 
     for (const game of escalan) {
       // Nunca baja al subir de nivel, y nunca se dispara.
@@ -188,8 +229,8 @@ describe('generadores de rondas', () => {
     for (const game of CHOICE_GAMES) {
       if (VARIETY_DEBT.has(game.id)) continue;
       // «La Aventura del Día» es igual toda la jornada a propósito: su
-      // variedad no se mide por semilla sino por fecha, más abajo.
-      if (game.generateFor) continue;
+      // variedad no se mide por semilla sino por fecha, en su propio describe.
+      if (esFijaPorFecha(game.generate)) continue;
       const cores = new Set(
         Array.from({ length: 800 }, (_, seed) => coreOf(game.generate!(seededRng(seed + 1), 0))),
       );

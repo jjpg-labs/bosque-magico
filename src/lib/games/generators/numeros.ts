@@ -227,8 +227,10 @@ export const genHowManyMissing: RoundGenerator = (rng, tier = 0) => {
 
 const ORDINALS = ['primero', 'segundo', 'tercero', 'cuarto', 'quinto'] as const;
 
-export const genOrdinals: RoundGenerator = (rng) => {
-  const length = randomInt(rng, 3, ORDINALS.length);
+export const genOrdinals: RoundGenerator = (rng, tier = 0) => {
+  // Aquí las opciones son la fila entera, así que la dificultad sube alargando
+  // la fila —hay que contar más puestos— en vez de añadiendo distractores.
+  const length = randomInt(rng, Math.min(3 + tier, ORDINALS.length), ORDINALS.length);
   const queue = sample(rng, CRITTERS, length);
   const position = randomInt(rng, 0, length - 1);
   const answer = queue[position];

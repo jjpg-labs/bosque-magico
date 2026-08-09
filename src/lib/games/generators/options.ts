@@ -28,3 +28,19 @@ export function numberOptions(rng: Rng, answer: number, max = 10): Option[] {
     ...distractors.map((n) => textOption(String(n), false)),
   ]);
 }
+
+/**
+ * Cuántos distractores tocan en esta ronda: tres al principio, cuatro y cinco
+ * según sube el nivel (o sea, de cuatro opciones a seis).
+ *
+ * Es el equivalente de lo que hacen las fábricas solas, para los generadores
+ * escritos a mano. Úsalo en vez de un 3 fijo siempre que la prueba tenga
+ * cuatro opciones; en las de dos o tres opciones no, que ahí el número es
+ * parte del enunciado.
+ *
+ * No hace falta comprobar si el pool da de sí: `distinctDistractors` y
+ * `sample` devuelven como mucho lo que haya.
+ */
+export function distractorCount(tier = 0, base = 3): number {
+  return base + Math.min(Math.max(tier, 0), 2);
+}

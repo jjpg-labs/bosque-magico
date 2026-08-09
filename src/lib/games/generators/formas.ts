@@ -15,7 +15,7 @@ import {
   SHAPE_SIDES,
 } from '../data';
 import { distinctDistractors } from './factories';
-import { buildOptions, textOption } from './options';
+import { buildOptions, textOption, distractorCount } from './options';
 import type { Option, RoundGenerator, ScenePosition, ShapeName } from '../types';
 import type { OptionSeed } from './options';
 
@@ -23,9 +23,9 @@ function shapeOption(shape: ShapeName, correct: boolean): OptionSeed {
   return { label: shape, display: { kind: 'shape', shape }, correct };
 }
 
-/** Cuatro figuras geométricas distintas, una de ellas la correcta. */
-export function shapeOptions(rng: Rng, answer: ShapeName): Option[] {
-  const others = sample(rng, SHAPES.filter((s) => s !== answer), 3);
+/** Figuras geométricas distintas, una de ellas la correcta. Cuatro, o más si el nivel ha subido. */
+export function shapeOptions(rng: Rng, answer: ShapeName, tier = 0): Option[] {
+  const others = sample(rng, SHAPES.filter((s) => s !== answer), distractorCount(tier));
   return buildOptions(rng, [
     shapeOption(answer, true),
     ...others.map((s) => shapeOption(s, false)),
@@ -35,14 +35,14 @@ export function shapeOptions(rng: Rng, answer: ShapeName): Option[] {
 // --- 5. Formas geométricas ---------------------------------------------------
 
 /** Se ve el nombre y hay que tocar la figura. */
-const genShapeByName: RoundGenerator = (rng) => {
+const genShapeByName: RoundGenerator = (rng, tier = 0) => {
   const answer = pick(rng, SHAPES);
 
   return {
     question: `Toca el ${answer}`,
     spoken: `Busca el ${answer} y tócalo.`,
     prompt: { kind: 'none' },
-    options: shapeOptions(rng, answer),
+    options: shapeOptions(rng, answer, tier),
   };
 };
 
@@ -51,9 +51,9 @@ const genShapeByName: RoundGenerator = (rng) => {
  * que estaba implementado en `PromptView` desde el principio sin que ningún
  * generador lo usara.
  */
-const genShapeNaming: RoundGenerator = (rng) => {
+const genShapeNaming: RoundGenerator = (rng, tier = 0) => {
   const answer = pick(rng, SHAPES);
-  const others = sample(rng, SHAPES.filter((s) => s !== answer), 3);
+  const others = sample(rng, SHAPES.filter((s) => s !== answer), distractorCount(tier));
 
   return {
     question: '¿Cómo se llama esta figura?',
@@ -73,7 +73,7 @@ export const genShapes: RoundGenerator = (rng, tier) =>
 
 // --- 53. ¿Cuántos lados tiene? -------------------------------------------------
 
-export const genShapeSides: RoundGenerator = (rng) => {
+export const genShapeSides: RoundGenerator = (rng, tier = 0) => {
   const entry = pick(rng, SHAPE_SIDES);
   const askCount = rng() < 0.5;
 
@@ -83,7 +83,7 @@ export const genShapeSides: RoundGenerator = (rng) => {
       [2, 3, 4, 5, 6, 7, 8],
       (n) => String(n),
       String(entry.sides),
-      3,
+      distractorCount(tier),
     );
     return {
       question: '¿Cuántos lados tiene?',
@@ -104,7 +104,7 @@ export const genShapeSides: RoundGenerator = (rng) => {
     SHAPE_SIDES,
     (s) => String(s.sides),
     String(entry.sides),
-    3,
+    distractorCount(tier),
   );
   return {
     question: `¿Qué figura tiene ${entry.sides} lados?`,
@@ -153,14 +153,14 @@ export const genColorShapes: RoundGenerator = (rng) => {
 
 // --- 55. El patrón de las formas ---------------------------------------------------
 
-export const genShapePattern: RoundGenerator = (rng) => {
+export const genShapePattern: RoundGenerator = (rng, tier = 0) => {
   const motifLength = pick(rng, [2, 2, 3]);
   const motif = sample(rng, GEOMETRIC_EMOJI, motifLength);
   const extra = randomInt(rng, 0, motifLength - 1);
   const visibleLength = motifLength * 2 + extra;
   const visible = Array.from({ length: visibleLength }, (_, i) => motif[i % motif.length]);
   const answer = motif[visibleLength % motif.length];
-  const others = distinctDistractors(rng, GEOMETRIC_EMOJI, (e) => e, answer, 3);
+  const others = distinctDistractors(rng, GEOMETRIC_EMOJI, (e) => e, answer, distractorCount(tier));
 
   return {
     question: '¿Qué figura sigue?',
@@ -179,7 +179,7 @@ export const genShapePattern: RoundGenerator = (rng) => {
 
 // --- 56. Cuerpos que ruedan ----------------------------------------------------------
 
-export const genRolling: RoundGenerator = (rng) => {
+export const genRolling: RoundGenerator = (rng, tier = 0) => {
   const askRolls = rng() < 0.5;
   const answer = pick(rng, ROLLING_OBJECTS.filter((o) => o.rolls === askRolls));
   const others = distinctDistractors(
@@ -187,7 +187,7 @@ export const genRolling: RoundGenerator = (rng) => {
     ROLLING_OBJECTS.filter((o) => o.rolls !== askRolls),
     (o) => o.emoji,
     answer.emoji,
-    3,
+    distractorCount(tier),
   );
 
   return {
@@ -209,26 +209,26 @@ export const genRolling: RoundGenerator = (rng) => {
 
 // --- 12. Empareja las formas -------------------------------------------------
 
-export const genShapeMatch: RoundGenerator = (rng) => {
+export const genShapeMatch: RoundGenerator = (rng, tier = 0) => {
   const object = pick(rng, SHAPE_OBJECTS);
 
   return {
     question: `¿Qué forma tiene ${object.name}?`,
     spoken: `Mira ${object.name}. ¿Qué forma geométrica tiene?`,
     prompt: { kind: 'emoji-single', item: object.emoji },
-    options: shapeOptions(rng, object.shape),
+    options: shapeOptions(rng, object.shape, tier),
   };
 };
 
 // --- 14. Colores del bosque --------------------------------------------------
 
 /** Se dice el color y hay que tocarlo. */
-const genColorByName: RoundGenerator = (rng) => {
+const genColorByName: RoundGenerator = (rng, tier = 0) => {
   const answer = pick(rng, COLORS);
   const others = sample(
     rng,
     COLORS.filter((c) => c.name !== answer.name),
-    3,
+    distractorCount(tier),
   );
 
   return {
@@ -247,10 +247,10 @@ const genColorByName: RoundGenerator = (rng) => {
 };
 
 /** Se ve un objeto y hay que decir de qué color es. */
-const genObjectColor: RoundGenerator = (rng) => {
+const genObjectColor: RoundGenerator = (rng, tier = 0) => {
   const object = pick(rng, COLOR_OBJECTS);
   const answer = COLORS.find((c) => c.name === object.color)!;
-  const others = distinctDistractors(rng, COLORS, (c) => c.name, answer.name, 3);
+  const others = distinctDistractors(rng, COLORS, (c) => c.name, answer.name, distractorCount(tier));
 
   return {
     question: `¿De qué color es ${object.name}?`,

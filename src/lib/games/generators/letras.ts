@@ -23,7 +23,7 @@ import {
   nameToEmoji,
   numberQuestion,
 } from './factories';
-import { buildOptions, textOption } from './options';
+import { buildOptions, textOption, distractorCount } from './options';
 import type { RoundGenerator } from '../types';
 
 /** Marcas diacríticas Unicode, para poder comparar «Á» con «A». */
@@ -47,10 +47,10 @@ export function initialLetter(word: string): string {
 
 // --- 1. Letras iniciales -----------------------------------------------------
 
-export const genLetters: RoundGenerator = (rng) => {
+export const genLetters: RoundGenerator = (rng, tier = 0) => {
   const critter = pick(rng, CRITTERS);
   const answer = initialLetter(critter.name);
-  const others = sample(rng, ALPHABET.filter((l) => l !== answer), 3);
+  const others = sample(rng, ALPHABET.filter((l) => l !== answer), distractorCount(tier));
 
   return {
     question: `¿Con qué letra empieza ${critter.name}?`,
@@ -65,10 +65,10 @@ export const genLetters: RoundGenerator = (rng) => {
 
 // --- 11. Sonidos e iniciales -------------------------------------------------
 
-export const genPhonics: RoundGenerator = (rng) => {
+export const genPhonics: RoundGenerator = (rng, tier = 0) => {
   const word = pick(rng, VOWEL_WORDS);
   const answer = initialLetter(word.name);
-  const others = sample(rng, VOWELS.filter((v) => v !== answer), 3);
+  const others = sample(rng, VOWELS.filter((v) => v !== answer), distractorCount(tier));
 
   return {
     question: `¿Con qué vocal empieza ${word.name}?`,
@@ -122,8 +122,9 @@ function letterOptions(
   answer: string,
   pool: readonly string[],
   exclude: string | readonly string[],
+  tier = 0,
 ) {
-  const others = distinctDistractors(rng, pool, (letter) => letter, exclude, 3);
+  const others = distinctDistractors(rng, pool, (letter) => letter, exclude, distractorCount(tier));
   return buildOptions(rng, [
     textOption(answer, true),
     ...others.map((letter) => textOption(letter, false)),
@@ -161,7 +162,7 @@ export const genLowercaseLetter: RoundGenerator = emojiToName(LOWERCASE_LETTERS,
 
 // --- 22. ¿Con qué letra acaba? ----------------------------------------------
 
-export const genFinalLetter: RoundGenerator = (rng) => {
+export const genFinalLetter: RoundGenerator = (rng, tier = 0) => {
   const entry = pick(rng, FINAL_LETTER_WORDS);
 
   return {
@@ -170,7 +171,7 @@ export const genFinalLetter: RoundGenerator = (rng) => {
     prompt: { kind: 'emoji-single', item: entry.emoji },
     // Los distractores salen de las terminaciones posibles, no del abecedario
     // entero: una Q o una B se descartarían sin pensar.
-    options: letterOptions(rng, entry.last, FINAL_LETTERS, entry.last),
+    options: letterOptions(rng, entry.last, FINAL_LETTERS, entry.last, tier),
   };
 };
 
@@ -198,10 +199,10 @@ export const genSyllableClaps: RoundGenerator = numberQuestion((rng, tier) => {
 
 const firstSyllableOf = (word: SyllableWord) => word.syllables[0].toUpperCase();
 
-export const genFirstSyllable: RoundGenerator = (rng) => {
+export const genFirstSyllable: RoundGenerator = (rng, tier = 0) => {
   const word = pick(rng, SYLLABLE_WORDS);
   const answer = firstSyllableOf(word);
-  const others = distinctDistractors(rng, SYLLABLE_WORDS, firstSyllableOf, answer, 3);
+  const others = distinctDistractors(rng, SYLLABLE_WORDS, firstSyllableOf, answer, distractorCount(tier));
 
   return {
     question: '¿Por qué sílaba empieza?',
@@ -248,7 +249,7 @@ const MISSING_LETTER_WORDS = CRITTERS.filter(
   (critter) => critter.name.length <= 7 && !critter.name.toLowerCase().includes('h'),
 ).map((critter) => ({ word: critter.name.toLowerCase(), letters: spellable(critter.name).split('') }));
 
-export const genMissingLetter: RoundGenerator = (rng) => {
+export const genMissingLetter: RoundGenerator = (rng, tier = 0) => {
   const entry = pick(rng, MISSING_LETTER_WORDS);
   // Nunca la primera: sin ninguna letra delante no hay por dónde empezar.
   const gap = randomInt(rng, 1, entry.letters.length - 1);
@@ -262,7 +263,7 @@ export const genMissingLetter: RoundGenerator = (rng) => {
       kind: 'sequence',
       items: entry.letters.map((letter, i) => (i === gap ? null : letter)),
     },
-    options: letterOptions(rng, answer, FULL_ALPHABET, answer),
+    options: letterOptions(rng, answer, FULL_ALPHABET, answer, tier),
   };
 };
 
@@ -270,7 +271,7 @@ export const genMissingLetter: RoundGenerator = (rng) => {
 
 const ALPHABET_WINDOW = 4;
 
-export const genAlphabetOrder: RoundGenerator = (rng) => {
+export const genAlphabetOrder: RoundGenerator = (rng, tier = 0) => {
   const start = randomInt(rng, 0, FULL_ALPHABET.length - ALPHABET_WINDOW);
   const shown = FULL_ALPHABET.slice(start, start + ALPHABET_WINDOW);
   const gap = randomInt(rng, 1, ALPHABET_WINDOW - 1);
@@ -280,7 +281,7 @@ export const genAlphabetOrder: RoundGenerator = (rng) => {
     question: '¿Qué letra falta en el abecedario?',
     spoken: 'Mira estas letras en orden. ¿Cuál falta?',
     prompt: { kind: 'sequence', items: shown.map((letter, i) => (i === gap ? null : letter)) },
-    options: letterOptions(rng, answer, FULL_ALPHABET, shown),
+    options: letterOptions(rng, answer, FULL_ALPHABET, shown, tier),
   };
 };
 
@@ -316,7 +317,7 @@ export const genWordLength: RoundGenerator = (rng) => {
 
 // --- 29. ¿Con qué empieza? ---------------------------------------------------
 
-export const genObjectInitials: RoundGenerator = (rng) => {
+export const genObjectInitials: RoundGenerator = (rng, tier = 0) => {
   const object = pick(rng, EVERYDAY_OBJECTS);
   const answer = initialLetter(object.name);
 
@@ -324,18 +325,18 @@ export const genObjectInitials: RoundGenerator = (rng) => {
     question: `¿Con qué letra empieza ${object.name}?`,
     spoken: `¿Con qué letra empieza la palabra ${object.name}?`,
     prompt: { kind: 'emoji-single', item: object.emoji },
-    options: letterOptions(rng, answer, ALPHABET, answer),
+    options: letterOptions(rng, answer, ALPHABET, answer, tier),
   };
 };
 
 // --- 30. La vocal escondida --------------------------------------------------
 
-export const genHiddenVowel: RoundGenerator = (rng) => {
+export const genHiddenVowel: RoundGenerator = (rng, tier = 0) => {
   const entry = pick(rng, ONE_VOWEL_WORDS);
   const others = sample(
     rng,
     VOWELS.filter((vowel) => vowel !== entry.vowel),
-    3,
+    distractorCount(tier),
   );
 
   return {

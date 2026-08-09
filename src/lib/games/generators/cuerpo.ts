@@ -20,7 +20,7 @@ import {
   orderedSequence,
   pairMatch,
 } from './factories';
-import { buildOptions } from './options';
+import { buildOptions, distractorCount } from './options';
 import type { RoundGenerator } from '../types';
 
 // --- 84. Las partes del cuerpo ------------------------------------------------
@@ -43,14 +43,14 @@ export const genSenses: RoundGenerator = pairMatch(SENSES, {
  * Los distractores salen siempre de **otros** tiempos: si vinieran del mismo,
  * la bufanda y los guantes serían las dos buenas para el mismo día de frío.
  */
-export const genClothesWeather: RoundGenerator = (rng) => {
+export const genClothesWeather: RoundGenerator = (rng, tier = 0) => {
   const weather = pick(rng, CLOTHES_WEATHER);
   const sign = pick(rng, weather.signs);
   const answer = pick(rng, weather.clothes);
   const strangers = CLOTHES_WEATHER.filter((other) => other.name !== weather.name).flatMap(
     (other) => other.clothes,
   );
-  const others = distinctDistractors(rng, strangers, (item) => item.emoji, answer.emoji, 3);
+  const others = distinctDistractors(rng, strangers, (item) => item.emoji, answer.emoji, distractorCount(tier));
 
   return {
     question: `¿Qué nos ponemos cuando ${weather.name}?`,

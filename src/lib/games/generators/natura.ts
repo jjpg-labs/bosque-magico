@@ -18,17 +18,17 @@ import {
   WEATHER,
 } from '../data';
 import { distinctDistractors, emojiToName, orderedSequence, pairMatch } from './factories';
-import { buildOptions, textOption } from './options';
+import { buildOptions, textOption, distractorCount } from './options';
 import type { RoundGenerator } from '../types';
 
 // --- 15. ¿Quién hace este sonido? --------------------------------------------
 
-export const genAnimalSound: RoundGenerator = (rng) => {
+export const genAnimalSound: RoundGenerator = (rng, tier = 0) => {
   const answer = pick(rng, ANIMAL_SOUNDS);
   const others = sample(
     rng,
     ANIMAL_SOUNDS.filter((a) => a.name !== answer.name),
-    3,
+    distractorCount(tier),
   );
 
   return {
@@ -133,7 +133,7 @@ export const genPlantKinds: RoundGenerator = emojiToName(PLANT_KINDS, {
  * como respuesta **tampoco sale de distractor**: los tres distractores vienen
  * siempre de las cosas que no hacen crecer nada.
  */
-export const genPlantNeeds: RoundGenerator = (rng) => {
+export const genPlantNeeds: RoundGenerator = (rng, tier = 0) => {
   const plant = pick(rng, PLANTS);
   const need = pick(rng, PLANT_NEEDS);
   const others = distinctDistractors(
@@ -141,7 +141,7 @@ export const genPlantNeeds: RoundGenerator = (rng) => {
     NOT_PLANT_NEEDS,
     (item) => item.emoji,
     need.emoji,
-    3,
+    distractorCount(tier),
   );
 
   return {
