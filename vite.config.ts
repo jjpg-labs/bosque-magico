@@ -53,6 +53,15 @@ export default defineConfig({
   ],
   test: {
     environment: 'jsdom',
+    /**
+     * Cinco segundos (el defecto) se quedan cortos en el runner de CI.
+     *
+     * Los tests de `ChoiceGame` y de la maratón esperan de verdad la pausa de
+     * 1,1 s que hay tras acertar —está puesta para que dé tiempo a ver el
+     * acierto—, así que tres rondas son más de tres segundos de reloj. En
+     * local van sobrados; en CI, con la máquina compartida, no.
+     */
+    testTimeout: 20000,
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
