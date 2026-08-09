@@ -92,6 +92,24 @@ function esFijaPorFecha(generate: (rng: ReturnType<typeof seededRng>, tier?: num
  */
 const VARIETY_DEBT = new Set<number>();
 
+/**
+ * Recorre todas las rondas y devuelve la primera que incumpla, ya descrita.
+ *
+ * Un `expect` por ronda son ciento dieciséis mil llamadas y unos segundos por
+ * test: generarlas cuesta 0,4 s y comprobarlas así costaba cuatro veces más.
+ * En el runner de CI eso tumbaba el test por timeout. Recorriendo aquí y
+ * afirmando una sola vez, además, el fallo dice qué ronda concreta falla en
+ * vez de solo la primera aserción rota.
+ */
+function primeraQueIncumpla(cumple: (round: Round) => boolean): string | undefined {
+  for (const round of ALL_ROUNDS) {
+    if (!cumple(round)) {
+      return `${round.question} | ${JSON.stringify(round.options.map((o) => o.display))}`;
+    }
+  }
+  return undefined;
+}
+
 describe('initialLetter', () => {
   it('quita las tildes', () => {
     expect(initialLetter('Árbol')).toBe('A');
@@ -123,37 +141,42 @@ describe('generadores de rondas', () => {
   });
 
   it('produce siempre exactamente una opción correcta', () => {
-    for (const round of ALL_ROUNDS) {
-      const correct = round.options.filter((option) => option.correct);
-      expect(correct, `pregunta: ${round.question}`).toHaveLength(1);
-    }
+    expect(
+      primeraQueIncumpla((round) => round.options.filter((o) => o.correct).length === 1),
+    ).toBeUndefined();
   });
 
   it('nunca repite el contenido visible de dos opciones', () => {
-    for (const round of ALL_ROUNDS) {
-      const rendered = round.options.map((option) => JSON.stringify(option.display));
-      expect(new Set(rendered).size, `pregunta: ${round.question}`).toBe(rendered.length);
-    }
+    expect(
+      primeraQueIncumpla((round) => {
+        const rendered = round.options.map((option) => JSON.stringify(option.display));
+        return new Set(rendered).size === rendered.length;
+      }),
+    ).toBeUndefined();
   });
 
   it('da ids únicos a las opciones', () => {
-    for (const round of ALL_ROUNDS) {
-      const ids = round.options.map((option) => option.id);
-      expect(new Set(ids).size).toBe(ids.length);
-    }
+    expect(
+      primeraQueIncumpla((round) => {
+        const ids = round.options.map((option) => option.id);
+        return new Set(ids).size === ids.length;
+      }),
+    ).toBeUndefined();
   });
 
   it('siempre ofrece al menos dos opciones', () => {
-    for (const round of ALL_ROUNDS) {
-      expect(round.options.length).toBeGreaterThanOrEqual(2);
-    }
+    expect(primeraQueIncumpla((round) => round.options.length >= 2)).toBeUndefined();
+  });
+
+  it('ninguna ronda pasa de seis opciones', () => {
+    // Seis botones ya llenan la pantalla de un móvil; más sería ilegible.
+    expect(primeraQueIncumpla((round) => round.options.length <= 6)).toBeUndefined();
   });
 
   it('rellena enunciado hablado y escrito', () => {
-    for (const round of ALL_ROUNDS) {
-      expect(round.question.length).toBeGreaterThan(0);
-      expect(round.spoken.length).toBeGreaterThan(0);
-    }
+    expect(
+      primeraQueIncumpla((round) => round.question.length > 0 && round.spoken.length > 0),
+    ).toBeUndefined();
   });
 
   it('genera tantas rondas como pide cada prueba', () => {
@@ -178,15 +201,18 @@ describe('generadores de rondas', () => {
     // repetían la misma cara en el 43 % de las partidas.
     // Sin excepciones: con el dedupe por ejercicio, ni siquiera las pruebas de
     // pool corto repiten dentro de una misma partida.
+    const repetidas: string[] = [];
     for (const game of CHOICE_GAMES) {
       for (const tier of TIERS) {
         for (const seed of seedsFor(tier)) {
           const rounds = generateRounds(game.generate!, seededRng(seed), game.roundsToWin, tier);
-          const cores = new Set(rounds.map(coreOf));
-          expect(cores.size, `${game.title} (semilla ${seed}, nivel ${tier})`).toBe(rounds.length);
+          if (new Set(rounds.map(coreOf)).size !== rounds.length) {
+            repetidas.push(`${game.title} (semilla ${seed}, nivel ${tier})`);
+          }
         }
       }
     }
+    expect(repetidas).toEqual([]);
   });
 
   it('las pruebas de fábrica ofrecen más opciones según sube el nivel', () => {
@@ -213,17 +239,6 @@ describe('generadores de rondas', () => {
     }
   });
 
-  it('ninguna ronda pasa de seis opciones, por muchas partidas que se jueguen', () => {
-    // Seis botones ya llenan la pantalla de un móvil; más sería ilegible.
-    for (const game of CHOICE_GAMES) {
-      for (const tier of [0, 1, 2, 3, 10]) {
-        for (const seed of SEEDS.slice(0, 40)) {
-          const round = game.generate(seededRng(seed), tier);
-          expect(round.options.length, `${game.title} (nivel ${tier})`).toBeLessThanOrEqual(6);
-        }
-      }
-    }
-  });
 
   it('cada prueba produce variedad suficiente para no memorizarse', () => {
     for (const game of CHOICE_GAMES) {
