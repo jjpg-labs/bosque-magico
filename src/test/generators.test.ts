@@ -31,14 +31,14 @@ function coreOf(round: Round): string {
 }
 
 /**
- * Pruebas con el pool tan corto que no llegan al mínimo de variedad: Formas y
- * Emociones tienen 6 ejercicios distintos en total, Colores 9 y Sonidos 10.
+ * Pruebas con el pool tan corto que no llegan al mínimo de variedad: Formas
+ * tiene 6 ejercicios distintos en total, Colores 9 y Sonidos 10.
  *
- * Es deuda conocida, no un permiso: se salda ampliando esos pools (fase de
- * profundidad del plan). Al vaciar este conjunto, el test de variedad protege
- * el catálogo entero.
+ * Es deuda conocida, no un permiso: se salda ampliando esos pools. «¿Cómo Se
+ * Siente?» ya salió de aquí al pasar sus emociones de 6 a 12. Al vaciar el
+ * conjunto, el test de variedad protege el catálogo entero.
  */
-const VARIETY_DEBT = new Set([5, 14, 15, 16]);
+const VARIETY_DEBT = new Set([5, 14, 15]);
 
 describe('initialLetter', () => {
   it('quita las tildes', () => {
