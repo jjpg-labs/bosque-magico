@@ -1,8 +1,12 @@
 /** Pruebas y pegatinas del mundo «La Montaña de las Formas». */
 
 import {
+  genColorShapes,
   genColors,
+  genRolling,
   genShapeMatch,
+  genShapePattern,
+  genShapeSides,
   genShapes,
 } from '../generators';
 import type { GameDefinition, Sticker } from '../types';
@@ -41,10 +45,58 @@ export const FORMAS_GAMES: readonly GameDefinition[] = [
     roundsToWin: 3,
     generate: genColors,
   },
+  {
+    id: 53,
+    title: '¿Cuántos Lados Tiene?',
+    desc: 'Cuenta los lados de la figura',
+    icon: '📐',
+    cat: 'Geometría',
+    world: 'formas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genShapeSides,
+  },
+  {
+    id: 54,
+    title: 'Formas de Colores',
+    desc: 'Un círculo azul, un cuadrado rojo…',
+    icon: '🎨',
+    cat: 'Geometría',
+    world: 'formas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genColorShapes,
+  },
+  {
+    id: 55,
+    title: 'El Patrón de las Formas',
+    desc: '¿Qué figura sigue en la fila?',
+    icon: '🔷',
+    cat: 'Lógica',
+    world: 'formas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genShapePattern,
+  },
+  {
+    id: 56,
+    title: 'Cuerpos que Ruedan',
+    desc: '¿Cuál rueda y cuál no?',
+    icon: '⚽',
+    cat: 'Geometría',
+    world: 'formas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genRolling,
+  },
 ];
 
 export const FORMAS_STICKERS: readonly Sticker[] = [
   { gameId: 5, name: 'Caracol Veloz', icon: '🐌', bg: 'bg-orange-100', color: 'text-orange-500' },
   { gameId: 12, name: 'Unicornio Bebé', icon: '🦄', bg: 'bg-fuchsia-100', color: 'text-fuchsia-500' },
   { gameId: 14, name: 'Loro Multicolor', icon: '🦜', bg: 'bg-teal-100', color: 'text-teal-600' },
+  { gameId: 53, name: 'Escuadra Contadora', icon: '📐' },
+  { gameId: 54, name: 'Paleta de Formas', icon: '🎨' },
+  { gameId: 55, name: 'Rombo Bailarín', icon: '🔷' },
+  { gameId: 56, name: 'Pelota Rodante', icon: '⚽' },
 ];

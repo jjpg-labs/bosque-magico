@@ -162,7 +162,7 @@ function WorksheetDisplay({ display }: { display: Option['display'] }) {
       return <span className="text-3xl">{display.emoji}</span>;
 
     case 'shape':
-      return <Shape shape={display.shape} className="w-10 h-10" />;
+      return <Shape shape={display.shape} color={display.color} className="w-10 h-10" />;
 
     case 'group':
       return (

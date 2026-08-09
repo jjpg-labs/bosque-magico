@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { seededRng } from '../lib/random';
 import { GAMES } from '../lib/games/catalog';
-import { ANIMAL_SOUNDS, EMOTIONS, RHYME_FAMILIES, ROUTINE_STEPS } from '../lib/games/data';
+import {
+  ANIMAL_SOUNDS,
+  COLOR_OBJECTS,
+  EMOTIONS,
+  RHYME_FAMILIES,
+  ROUTINE_STEPS,
+} from '../lib/games/data';
 import { generateRounds, initialLetter } from '../lib/games/generators';
 import type { Round } from '../lib/games/types';
 
@@ -31,14 +37,14 @@ function coreOf(round: Round): string {
 }
 
 /**
- * Pruebas con el pool tan corto que no llegan al mínimo de variedad: Formas
- * tiene 6 ejercicios distintos en total, Colores 9 y Sonidos 10.
+ * Deuda de variedad: pruebas eximidas del mínimo por tener el pool corto.
  *
- * Es deuda conocida, no un permiso: se salda ampliando esos pools. «¿Cómo Se
- * Siente?» ya salió de aquí al pasar sus emociones de 6 a 12. Al vaciar el
- * conjunto, el test de variedad protege el catálogo entero.
+ * **Está vacío, y la idea es que siga así.** Las cuatro que había —Formas,
+ * Colores, Sonidos y Emociones— se saldaron ampliando sus pools y dándoles
+ * un segundo modo de preguntar. Si una prueba nueva no llega al mínimo, la
+ * solución es más contenido, no una excepción aquí.
  */
-const VARIETY_DEBT = new Set([5, 14, 15]);
+const VARIETY_DEBT = new Set<number>();
 
 describe('initialLetter', () => {
   it('quita las tildes', () => {
@@ -242,7 +248,23 @@ describe('Colores del Bosque', () => {
     for (const seed of SEEDS) {
       const round = colors(seededRng(seed));
       const correct = round.options.find((option) => option.correct)!;
-      expect(round.question).toBe(`Toca el color ${correct.label}`);
+      if (round.question.startsWith('Toca el color')) {
+        expect(round.question).toBe(`Toca el color ${correct.label}`);
+        continue;
+      }
+      // El otro modo: se ve un objeto y hay que decir de qué color es.
+      const objeto = COLOR_OBJECTS.find((o) => round.question.includes(o.name));
+      expect(objeto, round.question).toBeDefined();
+      expect(correct.label).toBe(objeto!.color);
+    }
+  });
+
+  it('nunca pregunta por el color de algo que puede ser de dos colores', () => {
+    // La manzana es roja y verde; el maíz, amarillo y verde. Un objeto con
+    // dos colores defendibles convierte la ronda en una trampa.
+    const ambiguos = ['🍎', '🌽', '🌶️', '🍏', '🐈', '🦜', '🎈'];
+    for (const objeto of COLOR_OBJECTS) {
+      expect(ambiguos, objeto.name).not.toContain(objeto.emoji);
     }
   });
 });

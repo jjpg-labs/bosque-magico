@@ -14,6 +14,12 @@ export const ANIMAL_SOUNDS: ReadonlyArray<{ emoji: string; name: string; sound: 
   { emoji: '🐴', name: 'el caballo', sound: 'Iiiii' },
   { emoji: '🦁', name: 'el león', sound: 'Rrroar' },
   { emoji: '🐸', name: 'la rana', sound: 'Croac croac' },
+  { emoji: '🐭', name: 'el ratón', sound: 'Ii ii ii' },
+  { emoji: '🦉', name: 'el búho', sound: 'Uu uu' },
+  { emoji: '🐝', name: 'la abeja', sound: 'Bzzzz' },
+  { emoji: '🐦', name: 'el pájaro', sound: 'Pío pío' },
+  { emoji: '🐘', name: 'el elefante', sound: 'Prrruuu' },
+  { emoji: '🐒', name: 'el mono', sound: 'Uh uh ah ah' },
 ];
 
 // --- Dónde vive cada animal (74) y de dónde es (77) ---------------------------

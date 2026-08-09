@@ -1,6 +1,17 @@
 import type { Rng } from '../random';
+import type { ShapeColor } from '../shape-colors';
 
-export type ShapeName = 'círculo' | 'cuadrado' | 'triángulo' | 'estrella' | 'corazón' | 'rombo';
+export type ShapeName =
+  | 'círculo'
+  | 'cuadrado'
+  | 'triángulo'
+  | 'estrella'
+  | 'corazón'
+  | 'rombo'
+  | 'rectángulo'
+  | 'óvalo'
+  | 'pentágono'
+  | 'hexágono';
 
 /**
  * Los mundos del mapa. Cada prueba pertenece exactamente a uno.
@@ -79,7 +90,8 @@ export interface Option {
     | { kind: 'text'; text: string }
     /** `scale` es opcional: solo lo usa "Grande y Pequeño" para variar el tamaño visual. */
     | { kind: 'emoji'; emoji: string; scale?: 'sm' | 'lg' }
-    | { kind: 'shape'; shape: ShapeName }
+    /** `color` solo lo usa «Formas de Colores»; sin él, la figura usa el suyo. */
+    | { kind: 'shape'; shape: ShapeName; color?: ShapeColor }
     | { kind: 'group'; items: string[] };
   correct: boolean;
 }

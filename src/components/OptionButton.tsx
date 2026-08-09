@@ -73,7 +73,7 @@ function OptionDisplay({ display }: { display: Option['display'] }) {
       );
 
     case 'shape':
-      return <Shape shape={display.shape} className="w-16 h-16" />;
+      return <Shape shape={display.shape} color={display.color} className="w-16 h-16" />;
 
     case 'group':
       return (
