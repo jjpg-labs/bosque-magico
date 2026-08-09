@@ -78,7 +78,28 @@ export type Prompt =
   | { kind: 'number-sequence'; items: Array<number | null> }
   | { kind: 'two-groups'; a: string[]; b: string[] }
   | { kind: 'shape'; shape: ShapeName }
-  | { kind: 'listen'; word: string; emoji: string };
+  | { kind: 'listen'; word: string; emoji: string }
+  /**
+   * Un objeto colocado respecto a otra cosa, para las pruebas de orientación
+   * espacial: no se puede preguntar «¿está dentro o fuera?» sin dibujarlo.
+   */
+  | { kind: 'scene'; container: string; item: string; position: ScenePosition };
+
+/**
+ * Dónde está el objeto. Los tres últimos son los pisos de una torre y se
+ * dibujan de otra manera: «encima» es sobre la tapa de la caja, «arriba» es
+ * el piso de más arriba de tres.
+ */
+export type ScenePosition =
+  | 'dentro'
+  | 'fuera'
+  | 'encima'
+  | 'debajo'
+  | 'izquierda'
+  | 'derecha'
+  | 'arriba'
+  | 'medio'
+  | 'abajo';
 
 /** Cinco tamaños, suficientes para ordenar cuatro cosas de menor a mayor. */
 export type EmojiScale = 'xs' | 'sm' | 'md' | 'lg' | 'xl';

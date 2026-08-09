@@ -1,7 +1,11 @@
 /** Pruebas y pegatinas del mundo «La Montaña de las Formas». */
 
 import {
+  genAboveBelow,
   genColorShapes,
+  genInsideOutside,
+  genLeftRight,
+  genThreeFloors,
   genColors,
   genRolling,
   genShapeMatch,
@@ -89,6 +93,50 @@ export const FORMAS_GAMES: readonly GameDefinition[] = [
     roundsToWin: 3,
     generate: genRolling,
   },
+  {
+    id: 48,
+    title: 'Dentro y Fuera',
+    desc: '¿Está dentro o fuera de la caja?',
+    icon: '📦',
+    cat: 'Espacio',
+    world: 'formas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genInsideOutside,
+  },
+  {
+    id: 49,
+    title: 'Encima y Debajo',
+    desc: '¿Está encima o está debajo?',
+    icon: '🪑',
+    cat: 'Espacio',
+    world: 'formas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genAboveBelow,
+  },
+  {
+    id: 50,
+    title: 'Izquierda y Derecha',
+    desc: 'El lado izquierdo y el derecho',
+    icon: '👈',
+    cat: 'Espacio',
+    world: 'formas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genLeftRight,
+  },
+  {
+    id: 51,
+    title: 'Arriba, en Medio y Abajo',
+    desc: 'Tres pisos: arriba, en medio y abajo',
+    icon: '🗼',
+    cat: 'Espacio',
+    world: 'formas',
+    kind: 'choice',
+    roundsToWin: 3,
+    generate: genThreeFloors,
+  },
 ];
 
 export const FORMAS_STICKERS: readonly Sticker[] = [
@@ -99,4 +147,8 @@ export const FORMAS_STICKERS: readonly Sticker[] = [
   { gameId: 54, name: 'Paleta de Formas', icon: '🎨' },
   { gameId: 55, name: 'Rombo Bailarín', icon: '🔷' },
   { gameId: 56, name: 'Pelota Rodante', icon: '⚽' },
+  { gameId: 48, name: 'Caja Sorpresa', icon: '📦' },
+  { gameId: 49, name: 'Sillita Curiosa', icon: '🪑' },
+  { gameId: 50, name: 'Manita Señaladora', icon: '👈' },
+  { gameId: 51, name: 'Torre de Tres Pisos', icon: '🗼' },
 ];

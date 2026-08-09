@@ -5,7 +5,9 @@ import type { Rng } from '../../random';
 import {
   COLORS,
   COLOR_OBJECTS,
+  CONTAINERS,
   GEOMETRIC_EMOJI,
+  SCENE_ITEMS,
   ROLLING_OBJECTS,
   SHAPES,
   SHAPE_COLOR_NAMES,
@@ -14,7 +16,7 @@ import {
 } from '../data';
 import { distinctDistractors } from './factories';
 import { buildOptions, textOption } from './options';
-import type { Option, RoundGenerator, ShapeName } from '../types';
+import type { Option, RoundGenerator, ScenePosition, ShapeName } from '../types';
 import type { OptionSeed } from './options';
 
 function shapeOption(shape: ShapeName, correct: boolean): OptionSeed {
@@ -269,3 +271,69 @@ const genObjectColor: RoundGenerator = (rng) => {
 // la prueba de los nueve ejercicios que tenía.
 export const genColors: RoundGenerator = (rng, tier) =>
   rng() < 0.5 ? genColorByName(rng, tier) : genObjectColor(rng, tier);
+
+// --- 48-51. Orientación espacial ------------------------------------------------
+
+/**
+ * Las cuatro pruebas de orientación comparten forma: se dibuja el objeto
+ * colocado en algún sitio y se elige la palabra que lo describe. Cambia el
+ * par (o el trío) de posiciones que se enfrentan, y nada más.
+ *
+ * Las opciones son las palabras y no dibujos: lo que se aprende aquí es el
+ * vocabulario —dentro, fuera, encima, debajo—, no reconocer la escena.
+ */
+/** Cómo se dice cada posición en la opción: «medio» a secas no se entiende. */
+const POSITION_LABELS: Record<ScenePosition, string> = {
+  dentro: 'dentro',
+  fuera: 'fuera',
+  encima: 'encima',
+  debajo: 'debajo',
+  izquierda: 'izquierda',
+  derecha: 'derecha',
+  arriba: 'arriba',
+  medio: 'en medio',
+  abajo: 'abajo',
+};
+
+export { POSITION_LABELS };
+
+function makeScenePrueba(
+  positions: readonly ScenePosition[],
+  texts: { question: string; spoken: string },
+): RoundGenerator {
+  return (rng) => {
+    const container = pick(rng, CONTAINERS);
+    const item = pick(rng, SCENE_ITEMS);
+    const answer = pick(rng, positions);
+
+    return {
+      question: texts.question,
+      spoken: texts.spoken,
+      prompt: { kind: 'scene', container, item, position: answer },
+      options: buildOptions(
+        rng,
+        positions.map((position) => textOption(POSITION_LABELS[position], position === answer)),
+      ),
+    };
+  };
+}
+
+export const genInsideOutside = makeScenePrueba(['dentro', 'fuera'], {
+  question: '¿Está dentro o fuera?',
+  spoken: 'Mira dónde está. ¿Está dentro o está fuera?',
+});
+
+export const genAboveBelow = makeScenePrueba(['encima', 'debajo'], {
+  question: '¿Está encima o debajo?',
+  spoken: 'Mira dónde está. ¿Está encima o está debajo?',
+});
+
+export const genLeftRight = makeScenePrueba(['izquierda', 'derecha'], {
+  question: '¿Está a la izquierda o a la derecha?',
+  spoken: 'Mira dónde está. ¿Está a la izquierda o a la derecha?',
+});
+
+export const genThreeFloors = makeScenePrueba(['arriba', 'medio', 'abajo'], {
+  question: '¿En qué piso está?',
+  spoken: 'Mira la torre de tres pisos. ¿En qué piso está?',
+});

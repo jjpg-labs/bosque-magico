@@ -1,8 +1,9 @@
 # 🌳 El Bosque Mágico de los Bichitos
 
 Juego educativo en español para peques de 3 a 6 años: letras, números, sumas, restas,
-formas geométricas, lógica, colores, sonidos, emociones y rimas, repartidos en 19
-pruebas por **mundos**, con un álbum de pegatinas.
+formas geométricas, lógica, medidas y tiempo, naturaleza, cuerpo, emociones, música
+y oficios, repartidos en **100 pruebas** agrupadas por mundos, con un álbum de
+pegatinas.
 
 **Sin anuncios, sin cuentas, sin servidor y sin recogida de datos.** Se instala como
 app en el móvil o la tablet y funciona sin conexión.
@@ -30,23 +31,28 @@ tienen **dificultad escalonada**: cada 3 partidas jugadas de la misma prueba el 
 sube un nivel (hasta 2 niveles por encima del inicial), así que sigue dando trabajo
 según va creciendo quien juega.
 
-| Mundo                          | Qué trabaja                                     | Pruebas   | Se abre al…            |
-| ------------------------------ | ----------------------------------------------- | --------- | ---------------------- |
-| 🔤 El Claro de las Letras      | Letra inicial, vocales y rimas                  | 1, 11, 17 | siempre abierto        |
-| 🔢 El Río de los Números       | Contar y series numéricas                       | 2, 10     | siempre abierto        |
-| ➕ La Cueva de las Cuentas     | Sumar y restar                                  | 3, 4      | 3 pruebas de números   |
-| 🔷 La Montaña de las Formas    | Figuras geométricas y colores                   | 5, 12, 14 | siempre abierto        |
-| 🧩 El Laberinto de la Lógica   | Patrones, clasificar el intruso y memoria       | 6, 7, 8   | 3 pruebas de formas    |
-| 📏 El Prado de las Medidas     | Comparar cantidades y tamaños, rutina del día   | 9, 18, 19 | 3 pruebas de números   |
-| 🦊 El Bosque de los Animales   | Sonidos de animales                             | 15        | siempre abierto        |
-| 🧒 La Casa de los Peques       | Cuerpo, comida, higiene y seguridad             | —         | 3 pruebas de animales  |
-| 💛 La Plaza de las Emociones   | Emociones y convivencia                         | 16        | siempre abierto        |
-| 🚂 La Ciudad de los Oficios    | Oficios y transportes                           | —         | 3 pruebas de la casa   |
-| 🏆 La Torre del Trofeo         | Desafío combinado con todo lo anterior          | 13        | 20 pruebas en total    |
+| Mundo                        | Qué trabaja                                          | Pruebas | Se abre al…           |
+| ---------------------------- | ---------------------------------------------------- | ------: | --------------------- |
+| 🔤 El Claro de las Letras    | Letras, vocales, sílabas, rimas y abecedario         |      14 | siempre abierto       |
+| 🔢 El Río de los Números     | Contar, comparar, series y ordinales                 |      12 | siempre abierto       |
+| ➕ La Cueva de las Cuentas   | Sumar, restar, repartir y problemas hablados         |       9 | 3 pruebas de números  |
+| 🔷 La Montaña de las Formas  | Figuras, colores y orientación en el espacio         |      11 | siempre abierto       |
+| 🧩 El Laberinto de la Lógica | Patrones, clasificar, analogías y memoria            |      12 | 3 pruebas de formas   |
+| 📏 El Prado de las Medidas   | Tamaño, peso, días, estaciones y secuencias          |      11 | 3 pruebas de números  |
+| 🦊 El Bosque de los Animales | Animales, hábitats, plantas y tiempo atmosférico     |      11 | siempre abierto       |
+| 🧒 La Casa de los Peques     | Cuerpo, sentidos, comida e higiene                   |       8 | 3 pruebas de animales |
+| 💛 La Plaza de las Emociones | Emociones, convivencia y música                      |       6 | siempre abierto       |
+| 🚂 La Ciudad de los Oficios  | Oficios, transportes y el pueblo                     |       4 | 3 pruebas de la casa  |
+| 🏆 La Torre del Trofeo       | Desafío combinado y **La Aventura del Día**          |       2 | 20 pruebas en total   |
 
-Los mundos sin pruebas todavía no se pintan en el mapa: están reservados para el
-contenido que viene. Las condiciones de apertura se recortan a las pruebas que
-existen de verdad, así que ningún mundo queda cerrado por su propia condición.
+**La Aventura del Día** son ocho rondas que mezclan las pruebas ya superadas, con la
+aleatoriedad sembrada con la fecha: la misma aventura durante todo el día —se puede
+contar en la merienda y volver a jugarla igual— y distinta mañana. Es lo que hace que
+el juego no se acabe cuando se acaba el catálogo.
+
+Las condiciones de apertura se recortan a las pruebas que existen de verdad, así que
+ningún mundo queda cerrado por su propia condición, y un mundo sin pruebas todavía no
+se pinta en el mapa.
 
 ### Fichas para imprimir
 

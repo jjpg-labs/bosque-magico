@@ -127,3 +127,20 @@ export const COLOR_OBJECTS: ReadonlyArray<{ emoji: string; name: string; color: 
   { emoji: '🥛', name: 'la leche', color: 'blanco' },
   { emoji: '🎩', name: 'la chistera', color: 'negro' },
 ];
+
+/** Contenedores con un dentro y un fuera evidentes a simple vista. */
+export const CONTAINERS: readonly string[] = ['📦', '🧺', '🏠', '🥣', '🚗', '👜', '🪣', '🎒'];
+
+/** Cosas pequeñas que caben en cualquiera de los contenedores. */
+export const SCENE_ITEMS: readonly string[] = [
+  '🐞',
+  '🍎',
+  '⚽',
+  '🐱',
+  '🌸',
+  '🔑',
+  '🧸',
+  '🐸',
+  '⭐',
+  '🍪',
+];
