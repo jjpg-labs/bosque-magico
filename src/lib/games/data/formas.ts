@@ -16,6 +16,53 @@ export const SHAPES: readonly ShapeName[] = [
 ];
 
 /**
+ * Género de cada figura, para escribir bien el enunciado.
+ *
+ * «La estrella» es la única femenina de las diez, y decía «Toca **el**
+ * estrella». En un juego para aprender lengua eso no se puede quedar.
+ */
+export const SHAPE_GENDER: Record<ShapeName, 'el' | 'la'> = {
+  círculo: 'el',
+  cuadrado: 'el',
+  triángulo: 'el',
+  estrella: 'la',
+  corazón: 'el',
+  rombo: 'el',
+  rectángulo: 'el',
+  óvalo: 'el',
+  pentágono: 'el',
+  hexágono: 'el',
+};
+
+/** Femenino de los colores que lo tienen. Naranja, verde y azul no cambian. */
+const FEMININE_COLORS: Record<string, string> = {
+  rojo: 'roja',
+  amarillo: 'amarilla',
+  morado: 'morada',
+};
+
+/**
+ * El artículo, el imperativo y el color, ya concordados con la figura.
+ *
+ * Decía «Toca **el** estrella» y, al añadir los colores, «la estrella
+ * **morado**». En el enunciado hablado no hace falta: «de color morado»
+ * concuerda con «color», no con la figura.
+ */
+export function shapeArticle(shape: ShapeName): {
+  el: string;
+  tocalo: string;
+  color: (name: string) => string;
+} {
+  const el = SHAPE_GENDER[shape];
+  const femenino = el === 'la';
+  return {
+    el,
+    tocalo: femenino ? 'tócala' : 'tócalo',
+    color: (name) => (femenino ? (FEMININE_COLORS[name] ?? name) : name),
+  };
+}
+
+/**
  * Cuántos lados tiene cada figura.
  *
  * Ni la estrella ni el corazón están: los picos de la estrella no son lados

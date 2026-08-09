@@ -11,7 +11,7 @@ function EmojiGrid({ items, className = '' }: { items: string[]; className?: str
   return (
     <div className={`flex flex-wrap justify-center gap-2 max-w-[15rem] ${className}`}>
       {items.map((emoji, i) => (
-        <span key={i} className="text-4xl md:text-5xl leading-none">
+        <span key={i} className="text-4xl md:text-5xl print:text-2xl leading-none">
           {emoji}
         </span>
       ))}
@@ -28,7 +28,7 @@ export function PromptView({ prompt }: { prompt: Prompt }) {
     case 'emoji-single':
       return (
         <div className="bg-yellow-50 border-2 border-yellow-200 rounded-3xl px-8 py-6 inline-block">
-          <span className="text-7xl leading-none">{prompt.item}</span>
+          <span className="text-7xl print:text-4xl leading-none">{prompt.item}</span>
         </div>
       );
 
@@ -57,12 +57,12 @@ export function PromptView({ prompt }: { prompt: Prompt }) {
             item === null ? (
               <span
                 key={i}
-                className="w-12 h-12 md:w-14 md:h-14 rounded-2xl border-4 border-dashed border-purple-300 flex items-center justify-center text-2xl text-purple-400 font-bold"
+                className="w-12 h-12 md:w-14 md:h-14 print:w-8 print:h-8 rounded-2xl border-4 border-dashed border-purple-300 flex items-center justify-center text-2xl print:text-base text-purple-400 font-bold"
               >
                 ?
               </span>
             ) : (
-              <span key={i} className="text-4xl md:text-5xl leading-none">
+              <span key={i} className="text-4xl md:text-5xl print:text-2xl leading-none">
                 {item}
               </span>
             ),
@@ -77,7 +77,7 @@ export function PromptView({ prompt }: { prompt: Prompt }) {
           {prompt.items.map((item, i) => (
             <span
               key={i}
-              className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-extrabold ${
+              className={`w-12 h-12 md:w-14 md:h-14 print:w-9 print:h-9 rounded-2xl flex items-center justify-center text-2xl md:text-3xl print:text-lg font-extrabold ${
                 item === null
                   ? 'border-4 border-dashed border-sky-400 text-sky-400'
                   : 'bg-sky-500 text-white shadow'
@@ -110,7 +110,7 @@ export function PromptView({ prompt }: { prompt: Prompt }) {
     case 'listen':
       return (
         <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl px-8 py-6 inline-flex flex-col items-center gap-2">
-          <span className="text-7xl leading-none">{prompt.emoji}</span>
+          <span className="text-7xl print:text-4xl leading-none">{prompt.emoji}</span>
           <span className="text-xl font-bold text-amber-800">{prompt.word}</span>
         </div>
       );
@@ -142,9 +142,9 @@ function SceneView({ container, item, position }: Extract<Prompt, { kind: 'scene
         {FLOORS.map((floor) => (
           <div
             key={floor}
-            className="w-28 h-16 rounded-2xl border-2 border-indigo-200 bg-white flex items-center justify-center"
+            className="w-28 h-16 print:w-20 print:h-10 rounded-2xl border-2 border-indigo-200 bg-white flex items-center justify-center"
           >
-            <span className="text-4xl leading-none">{floor === position ? item : ''}</span>
+            <span className="text-4xl print:text-2xl leading-none">{floor === position ? item : ''}</span>
           </div>
         ))}
       </div>
@@ -161,16 +161,16 @@ function SceneView({ container, item, position }: Extract<Prompt, { kind: 'scene
 
   return (
     <div className="bg-indigo-50 border-2 border-indigo-200 rounded-3xl p-4 inline-grid grid-cols-3 grid-rows-3 place-items-center gap-1">
-      <span className="col-start-2 row-start-2 text-7xl leading-none relative">
+      <span className="col-start-2 row-start-2 text-7xl print:text-5xl leading-none relative">
         {container}
         {position === 'dentro' && (
-          <span className="absolute inset-0 flex items-center justify-center text-4xl leading-none">
+          <span className="absolute inset-0 flex items-center justify-center text-4xl print:text-3xl leading-none">
             {item}
           </span>
         )}
       </span>
       {position !== 'dentro' && (
-        <span className={`${CELLS[position]} text-4xl leading-none`}>{item}</span>
+        <span className={`${CELLS[position]} text-4xl print:text-3xl leading-none`}>{item}</span>
       )}
     </div>
   );
