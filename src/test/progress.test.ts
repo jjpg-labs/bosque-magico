@@ -216,6 +216,20 @@ describe('persistencia', () => {
     expect(loadProgress(localStorage)).toEqual(progressWith([1, 2]));
   });
 
+  it('un progreso ya guardado sobrevive intacto a la recarga', () => {
+    // El caso concreto que hay que proteger al reestructurar el catálogo: lo
+    // que la niña ya tenía guardado antes del cambio. El formato de
+    // `bosque_magico_progress_v2` no se toca y los ids 1..19 no se reasignan.
+    const guardado = { version: 2, completed: [1, 2, 3], playCounts: { 1: 5, 2: 2, 3: 7 } };
+    localStorage.setItem('bosque_magico_progress_v2', JSON.stringify(guardado));
+
+    const loaded = loadProgress(localStorage);
+    expect(loaded.completed).toEqual([1, 2, 3]);
+    expect(loaded.playCounts).toEqual({ 1: 5, 2: 2, 3: 7 });
+    // Y la dificultad escalonada sigue donde estaba.
+    expect(tierFor(loaded, 3)).toBe(2);
+  });
+
   it('conserva íntegro el progreso de todas las pruebas del catálogo', () => {
     // Regresión de pérdida de datos: `sanitize` validaba contra `TOTAL_GAMES`
     // en vez de contra los ids reales. Funcionaba de casualidad porque los
