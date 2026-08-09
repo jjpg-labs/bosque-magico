@@ -54,4 +54,14 @@ body {
   .no-print {
     display: none !important;
   }
+
+  /*
+   * Los seis ejercicios de una ficha no caben en un A4 al tamaño de pantalla:
+   * ahí los dibujos son grandes para que quepa un dedo encima, y en papel solo
+   * tienen que verse. Cada ejercicio ya lleva `break-inside-avoid`, así que lo
+   * único que faltaba era que la hoja entera entrase.
+   */
+  #printable-area {
+    zoom: 0.75;
+  }
 }
