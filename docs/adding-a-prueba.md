@@ -14,7 +14,7 @@ formas, lógica...), repartido en pruebas con pegatinas de premio. Es una PWA
 estática: sin servidor, sin cuentas, sin recogida de datos — ver
 [`PRIVACIDAD.md`](../PRIVACIDAD.md). El tono es siempre amable: un fallo
 nunca se penaliza ni se reprende (ver `ENCOURAGEMENTS` y `PRAISES` en
-`src/lib/games/data.ts`), solo anima a intentarlo otra vez.
+`src/lib/games/data/comun.ts`), solo anima a intentarlo otra vez.
 
 La versión original tenía las respuestas fijas en el JSX (siempre la abeja,
 siempre cinco mariquitas), así que bastaban dos partidas para memorizar la
@@ -22,17 +22,61 @@ posición del botón correcto. La versión actual genera cada pregunta al vuelo
 con datos aleatorios pero deterministas, precisamente para que eso no pase:
 esta guía existe para que las pruebas nuevas mantengan esa propiedad.
 
+## Los mundos
+
+Cada prueba pertenece a un **mundo**, y el mapa se navega en dos niveles:
+tarjetas de mundo → pruebas de ese mundo. Un mundo se abre según su
+condición (`WORLDS` en `src/lib/games/catalog/worlds.ts`) y, dentro de un
+mundo, las pruebas se abren en orden de id.
+
+| Mundo | Nombre | Se abre al… |
+| --- | --- | --- |
+| `letras` | El Claro de las Letras 🔤 | siempre abierto |
+| `numeros` | El Río de los Números 🔢 | siempre abierto |
+| `cuentas` | La Cueva de las Cuentas ➕ | 3 pruebas de `numeros` |
+| `formas` | La Montaña de las Formas 🔷 | siempre abierto |
+| `logica` | El Laberinto de la Lógica 🧩 | 3 pruebas de `formas` |
+| `medidas` | El Prado de las Medidas 📏 | 3 pruebas de `numeros` |
+| `natura` | El Bosque de los Animales 🦊 | siempre abierto |
+| `cuerpo` | La Casa de los Peques 🧒 | 3 pruebas de `natura` |
+| `emociones` | La Plaza de las Emociones 💛 | siempre abierto |
+| `oficios` | La Ciudad de los Oficios 🚂 | 3 pruebas de `cuerpo` |
+| `especial` | La Torre del Trofeo 🏆 | 20 pruebas en total |
+
+Los requisitos se recortan a las pruebas que existen de verdad, así que un
+mundo a medio llenar nunca queda cerrado por su propia condición.
+
 ## Mapa de la arquitectura
 
-Todo el contenido del juego vive en `src/lib/games/`:
+Todo el contenido vive en `src/lib/games/`, **troceado por mundo** para que
+varias personas (o agentes) puedan escribir contenido a la vez sin pisarse:
 
-| Fichero | Qué contiene |
-| --- | --- |
-| `types.ts` | Los contratos: `Round`, `Option`, `Prompt`, `GameDefinition`, `RoundGenerator`. |
-| `data.ts` | Contenido reutilizable — animales, colores, formas, categorías, frases de ánimo — como listas de datos, no de lógica. |
-| `generators.ts` | Un generador de rondas por prueba: función pura que arma una pregunta al vuelo. |
-| `catalog.ts` | El registro `GAMES` (las pruebas del mapa) y `STICKERS` (su recompensa). |
-| `random.ts` | Aleatoriedad **inyectable**: `pick`, `sample`, `shuffle`, `randomInt`, `numericDistractors`, todas reciben un `rng`. |
+```
+src/lib/games/
+├── types.ts                 Los contratos: Round, Option, Prompt,
+│                            GameDefinition, RoundGenerator, World, Sticker.
+├── data/
+│   ├── index.ts             Barril: una línea por mundo.
+│   ├── comun.ts             Contenido compartido (CRITTERS, COUNTABLES,
+│   │                        ENCOURAGEMENTS, PRAISES).
+│   └── <mundo>.ts           Las tablas de datos de ese mundo.
+├── generators/
+│   ├── index.ts             Barril: una línea por mundo.
+│   ├── factories.ts         Las 8 fábricas. ⚠️ API congelada.
+│   ├── options.ts           buildOptions, textOption, numberOptions.
+│   ├── rounds.ts            generateRounds y el dedupe por ejercicio.
+│   └── <mundo>.ts           Los generadores de ese mundo.
+└── catalog/
+    ├── index.ts             Compone GAMES y STICKERS; nextGameId,
+    │                        gamesOfWorld, stickerStyle…
+    ├── worlds.ts            La tabla WORLDS.
+    ├── especial.ts          La prueba de remezcla (se deriva del catálogo).
+    └── <mundo>.ts           <MUNDO>_GAMES y <MUNDO>_STICKERS.
+```
+
+Y fuera de `games/`: `src/lib/random.ts`, la aleatoriedad **inyectable**
+(`pick`, `sample`, `shuffle`, `randomInt`, `numericDistractors`, todas
+reciben un `rng`), y `src/lib/progress.ts`, el progreso y el desbloqueo.
 
 La pieza clave es `random.ts`: nunca se usa `Math.random()` directamente en
 un generador, siempre el `rng` que se recibe como parámetro. Eso es lo que
@@ -41,47 +85,106 @@ exactamente la misma ronda para comprobarla — si un generador nuevo usa
 `Math.random()` a pelo, deja de ser determinista y los tests no lo pueden
 verificar.
 
+Los barriles reexportan exactamente los mismos nombres que exportaban los
+antiguos ficheros únicos, así que `import { ... } from '../lib/games/data'`
+sigue funcionando igual.
+
+## Las fábricas: el camino por defecto
+
+**Antes de escribir un generador a mano, mira si alguna fábrica sirve.** Las
+ocho de `generators/factories.ts` garantizan por construcción los dos
+invariantes que exige el test genérico (una sola opción correcta, ningún
+`display` repetido) y validan la tabla de datos al cargar el módulo, así que
+una tabla mal formada revienta en el primer test y no jugando.
+
+Contrato común:
+
+```ts
+interface Item { emoji: string; name: string }
+interface Category { name: string; article: 'un' | 'una'; items: readonly Item[] }
+interface Texts<T> { question: (subject: T) => string; spoken: (subject: T) => string }
+interface ChoiceOptions { optionCount?: number }   // por defecto 4
+```
+
+| Fábrica | Firma | Para qué |
+| --- | --- | --- |
+| `emojiToName` | `(pool: Item[], texts: Texts<Item>, opts?) => RoundGenerator` | Se ve un dibujo, se elige su nombre. También clasificar: varios ítems comparten `name` y la fábrica agrupa por él. |
+| `nameToEmoji` | `(pool: Item[], texts: Texts<Item>, opts?: { as?: 'emoji' \| 'text' }) => RoundGenerator` | El enunciado lo nombra y hay que tocarlo. Con `as: 'text'` las opciones son palabras o letras. |
+| `pairMatch` | `(pairs: Pair[], texts: Texts<Pair>, opts?) => RoundGenerator` | Emparejar: el animal y su casa, la herramienta y su oficio. `Pair = { from: Item; to: Item }`. |
+| `categoryMember` | `(cats: Category[], texts: Texts<CategoryPick>, opts?) => RoundGenerator` | «¿Cuál es una fruta?». Un acierto y tres de categorías distintas entre sí. |
+| `oddOneOut` | `(cats: Category[], texts: Texts<OddOnePick>, opts?) => RoundGenerator` | El intruso: tres de una clase y uno de otra. |
+| `orderedSequence` | `(sequences: Item[][], texts: Texts<SequencePick>, opts?: { windowLen?: number }) => RoundGenerator` | Una fila en orden con un hueco. Se pasa una **lista** de secuencias; para una sola, `[PASOS]`. |
+| `numberQuestion` | `(build: (rng, tier) => NumberSpec, opts?) => RoundGenerator` | Cualquier respuesta numérica. Es la única que recibe el `tier`. |
+| `listenAndPick` | `(pool: T[], relation: ListenRelation<T>, texts: Texts<ListenPick<T>>, opts?) => RoundGenerator` | Se escucha una palabra y se toca la que rima / empieza igual / tiene esa vocal. |
+
+Los tipos de apoyo (`Pair`, `CategoryPick`, `OddOnePick`, `SequencePick`,
+`NumberSpec`, `ListenRelation`, `ListenPick`) se exportan desde el mismo
+sitio, y cada fábrica lleva un ejemplo de uso en su comentario.
+
+Además, `distinctDistractors(rng, pool, keyOf, exclude, count)` está
+disponible por si escribes un generador a mano: es lo que garantiza que no se
+repita el contenido visible de dos opciones.
+
+⚠️ **`factories.ts` está congelado.** Si tu prueba necesita una fábrica que
+no existe, escríbela en tu propio `generators/<mundo>.ts`; ya se promocionará
+más tarde, en un cambio aparte.
+
 ## Receta paso a paso
 
-1. **Contenido nuevo, si hace falta.** Si la prueba necesita datos que no
-   existen todavía (más animales, palabras, categorías...), añádelos a
-   `data.ts` siguiendo el estilo de lo que ya hay: emoji + nombre en
-   español, mayúscula inicial cuando el nombre es la respuesta (p. ej. las
-   letras iniciales), nada que pueda asustar a un niño de 3 años.
+1. **Elige mundo e id.** El mundo decide dónde sale en el mapa y de qué color
+   es su pegatina. El id es el siguiente libre del rango de ese mundo. **Un
+   id no se reasigna jamás**: el progreso guardado se valida contra los ids
+   reales, así que reutilizar uno le cambiaría de prueba una pegatina ya
+   ganada. Los huecos son seguros; retirar ids, no.
 
-2. **El generador.** Escribe `genXxx: RoundGenerator` en `generators.ts`:
-   una función pura `(rng, tier?) => Round` que usa los helpers de
-   `random.ts` para elegir la respuesta y sus distractores. Debe cumplir
-   siempre estos dos invariantes (los comprueba el test genérico, ver más
-   abajo):
-   - Exactamente una opción con `correct: true`.
-   - Ninguna opción repite el contenido visible (`display`) de otra.
+2. **Contenido nuevo, si hace falta**, en `data/<mundo>.ts` (créalo si no
+   existe y añade su línea a `data/index.ts`). Sigue el estilo de lo que ya
+   hay: emoji + nombre en español, mayúscula inicial cuando el nombre es la
+   respuesta, nada que pueda asustar a un niño de 3 años. Reglas duras:
+   - **Español de España**: coche, zumo, patata, ordenador, cole.
+   - **Respuesta única e inequívoca.** Comprueba a mano que ningún distractor
+     podría defenderse. Trampas típicas: 🍎 es rojo *y* verde; el tomate es
+     fruta botánicamente; la rana vive en el estanque *y* en tierra; 🍕 es
+     triángulo *y* sector circular.
+   - **Emoji de Unicode ≤ 12.0** salvo excepción justificada (los de 14.0+
+     salen como caja en Android 10 y anteriores), y que se distinga a 32 px.
+
+3. **El generador**, en `generators/<mundo>.ts` (y su línea en
+   `generators/index.ts`). Lo normal es una llamada a una fábrica. Si la
+   escribes a mano, es una función pura `(rng, tier?) => Round` que debe
+   cumplir los dos invariantes: exactamente una opción con `correct: true` y
+   ningún `display` repetido.
 
    El parámetro `tier` es opcional: solo lo usan las pruebas con rango
-   numérico natural (contar, sumar, restar...) para subir la dificultad
-   cada 3 partidas — ver `tierFor` en `progress.ts`. Si tu prueba no tiene
-   un rango numérico que escalar, simplemente ignóralo.
+   numérico natural (contar, sumar, restar...) para subir la dificultad cada
+   3 partidas — ver `tierFor` en `progress.ts`. Si tu prueba no tiene un
+   rango numérico que escalar, simplemente ignóralo.
 
-3. **Registro en el catálogo.** Añade la prueba a `GAMES` en `catalog.ts`:
-   `id` correlativo (el siguiente número libre), `title`, `desc`, `icon`
-   (un emoji), `cat` (categoría corta), `kind: 'choice'`, `roundsToWin`
-   (3 es el estándar de las pruebas normales), y `generate` apuntando a tu
-   función. Añade también su pegatina a `STICKERS` con el mismo `gameId`.
+4. **Registro en el catálogo**, en `catalog/<mundo>.ts`: añade la
+   `GameDefinition` a `<MUNDO>_GAMES` (`id`, `title`, `desc`, `icon`, `cat`
+   de 11 caracteres como mucho, `world`, `kind: 'choice'`, `roundsToWin` — 3
+   es el estándar — y `generate`) y su pegatina a `<MUNDO>_STICKERS`
+   (`gameId`, `name`, `icon`). **No pongas `bg` ni `color`**: se heredan del
+   mundo. Si el mundo es nuevo, añade sus dos líneas a `catalog/index.ts`.
 
-4. **Tests.** El barrido genérico en `src/test/generators.test.ts`
-   (`allRounds()`) recorre **todas** las pruebas de `GAMES` con 200
-   semillas distintas, así que en cuanto tu prueba está registrada queda
-   cubierta automáticamente por esas comprobaciones genéricas — no hace
-   falta escribir nada nuevo para eso. Añade un test específico solo si tu
-   prueba tiene un invariante propio que esas comprobaciones genéricas no
-   capturan (por ejemplo: que una suma cuadre con los elementos dibujados,
-   como hace el test de `genAdd`). En ese caso, sigue el patrón de los
-   `describe` ya existentes en ese fichero.
+5. **Tests.** El barrido genérico de `src/test/generators.test.ts`
+   (`ALL_ROUNDS`) recorre **todas** las pruebas de `GAMES` con 200 semillas,
+   así que en cuanto tu prueba está registrada queda cubierta: una sola
+   respuesta correcta, sin `display` repetidos, sin repetir ejercicio dentro
+   de una partida y con variedad suficiente para no memorizarse. No hace
+   falta escribir nada para eso.
 
-5. **README.** Añade la fila correspondiente a la tabla de pruebas en
-   `README.md`.
+   Añade un test específico solo si tu prueba tiene un invariante propio que
+   el barrido no captura (que una suma cuadre con los elementos dibujados,
+   que el sonido locutado sea el del animal correcto...). Si has escrito una
+   tabla de pares o de categorías, el mejor test es el de la propia tabla:
+   «ningún emoji aparece en dos categorías», «ningún `from` tiene dos
+   respuestas» — aunque las fábricas ya lo comprueban al construirse.
 
-6. **Verificación local antes de dar la tarea por terminada:**
+6. **README.** La tabla de pruebas es **por mundo**: normalmente basta con
+   añadir el id a la celda de tu mundo.
+
+7. **Verificación local antes de dar la tarea por terminada:**
 
    ```bash
    npm run lint && npm run typecheck && npm test && npm run build
@@ -90,12 +193,61 @@ verificar.
    Si algo de esto falla, la tarea no está terminada — arréglalo antes de
    proponer el cambio. (Esto mismo lo vuelve a comprobar el CI en cada PR:
    `.github/workflows/ci.yml`, así que es una red de seguridad, no la
-   única.)
+   única.) Comprueba también en `npm run dev` que se ve bien **a 360 px de
+   ancho**.
 
-## Ejemplo completo: `genColors`
+## Ejemplo completo con fábrica
 
-La prueba más corta y clara del catálogo, como plantilla de referencia
-(`src/lib/games/generators.ts`):
+Una prueba de «¿dónde vive cada animal?», que es el caso más típico.
+
+```ts
+// src/lib/games/data/natura.ts
+import type { Pair } from '../generators';
+
+export const HABITATS: readonly Pair[] = [
+  { from: { emoji: '🐟', name: 'el pez' }, to: { emoji: '🌊', name: 'el mar' } },
+  { from: { emoji: '🐒', name: 'el mono' }, to: { emoji: '🌴', name: 'la selva' } },
+  { from: { emoji: '🐄', name: 'la vaca' }, to: { emoji: '🏠', name: 'la granja' } },
+  // ...animales monohábitat: nada de ranas ni tortugas, que viven en dos sitios.
+];
+```
+
+```ts
+// src/lib/games/generators/natura.ts
+import { pairMatch } from './factories';
+import { HABITATS } from '../data';
+import type { RoundGenerator } from '../types';
+
+export const genHabitats: RoundGenerator = pairMatch(HABITATS, {
+  question: (pair) => `¿Dónde vive ${pair.from.name}?`,
+  spoken: (pair) => `Mira el animal. ¿Dónde vive ${pair.from.name}?`,
+});
+```
+
+```ts
+// src/lib/games/catalog/natura.ts
+{
+  id: 74,
+  title: '¿Dónde Vive?',
+  desc: 'Cada animal tiene su casa',
+  icon: '🏡',
+  cat: 'Animales',
+  world: 'natura',
+  kind: 'choice',
+  roundsToWin: 3,
+  generate: genHabitats,
+},
+// y en NATURA_STICKERS:
+{ gameId: 74, name: 'Topo Excavador', icon: '🦫' },
+```
+
+Eso es todo: la fábrica pone el enunciado visual, baraja las opciones, elige
+tres distractores que no se repiten y garantiza que solo hay una respuesta.
+
+## Ejemplo de generador a mano
+
+Cuando ninguna fábrica encaja. `genColors` es el más corto del catálogo
+(`src/lib/games/generators/formas.ts`):
 
 ```ts
 export const genColors: RoundGenerator = (rng) => {
@@ -125,29 +277,30 @@ export const genColors: RoundGenerator = (rng) => {
 };
 ```
 
-Y su registro correspondiente en `catalog.ts`:
+## La voz
 
-```ts
-{
-  id: 14,
-  title: 'Colores del Bosque',
-  desc: 'Descubre y toca cada color',
-  icon: '🎨',
-  cat: 'Colores',
-  kind: 'choice',
-  roundsToWin: 3,
-  generate: genColors,
-},
-```
+Todos los enunciados se leen en voz alta, y eso impone reglas al contenido:
+
+- **Nunca emojis en `spoken`**: el lector los verbaliza («cara sonriente»).
+- **Nunca abreviaturas ni símbolos** (`1º`, `+`, `%`): escribe «primero»,
+  «más». «3-6» se lee como un guion: escribe «del tres al seis».
+- Menos de **15 palabras**: a `rate: 0.85` una frase larga tarda 5 segundos y
+  la niña toca antes de que acabe.
+- `desc` se lee entero al pulsar 🔊: una línea corta.
 
 ## Qué NO hacer
 
 - No metas contenido ni lógica de preguntas en `src/components/`: los datos
-  van en `data.ts`/`generators.ts`, la interfaz ya sabe pintar cualquier
-  `Round` bien formado.
+  van en `data/<mundo>.ts`, los generadores en `generators/<mundo>.ts`, y la
+  interfaz ya sabe pintar cualquier `Round` bien formado.
 - No uses `Math.random()` directamente — rompe la reproducibilidad de los
   tests.
-- No añadas dependencias nuevas sin un motivo claro: el proyecto presume de
-  no tener servidor ni llamadas externas (ver `PRIVACIDAD.md`).
+- No reasignes un id ya usado ni retires una prueba: el progreso guardado se
+  valida contra los ids reales y se perderían pegatinas ganadas.
+- No escribas `bg` ni `color` en una pegatina nueva: se heredan del mundo.
+- No toques `factories.ts` para añadir una fábrica nueva: va en tu
+  `generators/<mundo>.ts`.
+- No añadas dependencias nuevas: el proyecto presume de no tener servidor ni
+  llamadas externas (ver `PRIVACIDAD.md`).
 - No cambies el tono: siempre en español, siempre amable, nunca un mensaje
   que pueda inquietar a un niño de 3-4 años.
