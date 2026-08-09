@@ -1,4 +1,5 @@
 import { Shape } from './Shape';
+import { unhandled } from '../lib/exhaustive';
 import type { Option } from '../lib/games/types';
 
 export type OptionState = 'idle' | 'wrong' | 'right';
@@ -35,37 +36,57 @@ export function OptionButton({ option, state, disabled, onSelect }: OptionButton
         ${STATE_CLASSES[state]}
       `}
     >
-      {option.display.kind === 'text' && (
-        <span className="text-4xl md:text-5xl font-extrabold text-emerald-800">
-          {option.display.text}
-        </span>
-      )}
+      <OptionDisplay display={option.display} />
+    </button>
+  );
+}
 
-      {option.display.kind === 'emoji' && (
+/**
+ * Una letra o un número caben a `text-5xl`, pero una palabra como
+ * «Con sueño» se sale del botón. El tamaño baja según la longitud para que
+ * las respuestas puedan ser palabras y no solo símbolos.
+ */
+function textSizeFor(text: string): string {
+  if (text.length <= 2) return 'text-4xl md:text-5xl';
+  if (text.length <= 6) return 'text-2xl md:text-3xl';
+  return 'text-lg md:text-xl';
+}
+
+function OptionDisplay({ display }: { display: Option['display'] }) {
+  switch (display.kind) {
+    case 'text':
+      return (
+        <span className={`font-extrabold text-emerald-800 text-center ${textSizeFor(display.text)}`}>
+          {display.text}
+        </span>
+      );
+
+    case 'emoji':
+      return (
         <span
           className={`leading-none ${
-            option.display.scale === 'lg'
-              ? 'text-7xl'
-              : option.display.scale === 'sm'
-                ? 'text-2xl'
-                : 'text-5xl'
+            display.scale === 'lg' ? 'text-7xl' : display.scale === 'sm' ? 'text-2xl' : 'text-5xl'
           }`}
         >
-          {option.display.emoji}
+          {display.emoji}
         </span>
-      )}
+      );
 
-      {option.display.kind === 'shape' && <Shape shape={option.display.shape} className="w-16 h-16" />}
+    case 'shape':
+      return <Shape shape={display.shape} className="w-16 h-16" />;
 
-      {option.display.kind === 'group' && (
+    case 'group':
+      return (
         <span className="flex flex-wrap justify-center gap-1.5 max-w-[10rem]">
-          {option.display.items.map((emoji, i) => (
+          {display.items.map((emoji, i) => (
             <span key={i} className="text-3xl leading-none">
               {emoji}
             </span>
           ))}
         </span>
-      )}
-    </button>
-  );
+      );
+
+    default:
+      return unhandled(display);
+  }
 }

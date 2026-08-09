@@ -16,6 +16,30 @@ function allRounds(): Round[] {
   );
 }
 
+// Se calcula una sola vez: es el 83 % del coste de este fichero y las seis
+// comprobaciones genéricas recorren exactamente el mismo material.
+const ALL_ROUNDS = allRounds();
+
+/**
+ * Identifica un ejercicio: mismo enunciado, mismo dibujo y misma respuesta.
+ * Dos rondas con el mismo `core` son la misma pregunta para la niña, aunque
+ * los distractores hayan salido distintos.
+ */
+function coreOf(round: Round): string {
+  const correct = round.options.find((option) => option.correct);
+  return [round.question, JSON.stringify(round.prompt), JSON.stringify(correct?.display)].join('|');
+}
+
+/**
+ * Pruebas con el pool tan corto que no llegan al mínimo de variedad: Formas y
+ * Emociones tienen 6 ejercicios distintos en total, Colores 9 y Sonidos 10.
+ *
+ * Es deuda conocida, no un permiso: se salda ampliando esos pools (fase de
+ * profundidad del plan). Al vaciar este conjunto, el test de variedad protege
+ * el catálogo entero.
+ */
+const VARIETY_DEBT = new Set([5, 14, 15, 16]);
+
 describe('initialLetter', () => {
   it('quita las tildes', () => {
     expect(initialLetter('Árbol')).toBe('A');
@@ -28,43 +52,51 @@ describe('initialLetter', () => {
 });
 
 describe('generadores de rondas', () => {
-  it('cubre las 19 pruebas del catálogo', () => {
-    expect(GAMES).toHaveLength(19);
+  it('no deja ninguna prueba del catálogo sin implementar', () => {
+    // Un mínimo, no un número exacto: el catálogo crece por fases y no tiene
+    // sentido pagar un peaje de test en cada prueba nueva. Lo que sí protege
+    // es que no se borre medio catálogo por accidente.
+    expect(GAMES.length).toBeGreaterThanOrEqual(19);
     // La de memoria no usa generador; las demás sí. Ninguna debe quedar sin
     // implementar: en la versión original, 10 de 13 caían a un botón genérico.
     const unimplemented = GAMES.filter((game) => game.kind === 'choice' && !game.generate);
     expect(unimplemented).toEqual([]);
   });
 
+  it('no repite ids en el catálogo', () => {
+    const ids = GAMES.map((game) => game.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('produce siempre exactamente una opción correcta', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       const correct = round.options.filter((option) => option.correct);
       expect(correct, `pregunta: ${round.question}`).toHaveLength(1);
     }
   });
 
   it('nunca repite el contenido visible de dos opciones', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       const rendered = round.options.map((option) => JSON.stringify(option.display));
       expect(new Set(rendered).size, `pregunta: ${round.question}`).toBe(rendered.length);
     }
   });
 
   it('da ids únicos a las opciones', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       const ids = round.options.map((option) => option.id);
       expect(new Set(ids).size).toBe(ids.length);
     }
   });
 
   it('siempre ofrece al menos dos opciones', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       expect(round.options.length).toBeGreaterThanOrEqual(2);
     }
   });
 
   it('rellena enunciado hablado y escrito', () => {
-    for (const round of allRounds()) {
+    for (const round of ALL_ROUNDS) {
       expect(round.question.length).toBeGreaterThan(0);
       expect(round.spoken.length).toBeGreaterThan(0);
     }
@@ -83,6 +115,32 @@ describe('generadores de rondas', () => {
     const letters = GAMES[0].generate!;
     const questions = new Set(SEEDS.map((seed) => letters(seededRng(seed)).question));
     expect(questions.size).toBeGreaterThan(5);
+  });
+
+  it('no repite el mismo ejercicio dentro de una misma partida', () => {
+    // `generateRounds` deduplica por ejercicio, no por enunciado. Antes
+    // deduplicaba solo por `question`, así que las siete pruebas cuyo
+    // enunciado es siempre el mismo («¿Cómo se siente?», «¿Cuántos hay?»...)
+    // repetían la misma cara en el 43 % de las partidas.
+    // Sin excepciones: con el dedupe por ejercicio, ni siquiera las pruebas de
+    // pool corto repiten dentro de una misma partida.
+    for (const game of CHOICE_GAMES) {
+      for (const seed of SEEDS) {
+        const rounds = generateRounds(game.generate!, seededRng(seed), game.roundsToWin);
+        const cores = new Set(rounds.map(coreOf));
+        expect(cores.size, `${game.title} (semilla ${seed})`).toBe(rounds.length);
+      }
+    }
+  });
+
+  it('cada prueba produce variedad suficiente para no memorizarse', () => {
+    for (const game of CHOICE_GAMES) {
+      if (VARIETY_DEBT.has(game.id)) continue;
+      const cores = new Set(
+        Array.from({ length: 800 }, (_, seed) => coreOf(game.generate!(seededRng(seed + 1), 0))),
+      );
+      expect(cores.size, game.title).toBeGreaterThanOrEqual(Math.max(8, 4 * game.roundsToWin));
+    }
   });
 });
 

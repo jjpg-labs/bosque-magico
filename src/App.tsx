@@ -9,7 +9,7 @@ import { SpeechBubble } from './components/SpeechBubble';
 import { StickerAlbum } from './components/StickerAlbum';
 import { useSpeech } from './hooks/useSpeech';
 import { playSound, unlockAudio } from './lib/audio';
-import { findGame, stickerFor, STICKERS, TOTAL_GAMES } from './lib/games/catalog';
+import { findGame, nextGameId, stickerFor, STICKERS } from './lib/games/catalog';
 import type { Sticker } from './lib/games/catalog';
 import {
   emptyProgress,
@@ -127,7 +127,7 @@ export default function App() {
                 🌟
               </span>
               <span>
-                Álbum ({unlockedCount}/{TOTAL_GAMES})
+                Álbum ({unlockedCount}/{STICKERS.length})
               </span>
             </button>
 
@@ -165,8 +165,9 @@ export default function App() {
             onComplete={handleComplete}
             tier={tierFor(progress, currentGame.id)}
             onNext={() => {
-              if (currentGame.id < TOTAL_GAMES) handleSelectGame(currentGame.id + 1);
-              else goToMap();
+              const next = nextGameId(currentGame.id);
+              if (next === undefined) goToMap();
+              else handleSelectGame(next);
             }}
           />
         )}

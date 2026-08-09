@@ -10,7 +10,7 @@
  * regalando pegatinas no ganadas.
  */
 
-import { TOTAL_GAMES } from './games/catalog';
+import { GAME_IDS } from './games/catalog';
 
 const STORAGE_KEY = 'bosque_magico_progress_v2';
 const LEGACY_KEY = 'bosque_bichitos_progress';
@@ -25,9 +25,7 @@ export const emptyProgress: Progress = { completed: [], playCounts: {} };
 
 function sanitize(ids: unknown): number[] {
   if (!Array.isArray(ids)) return [];
-  const valid = ids.filter(
-    (id): id is number => typeof id === 'number' && Number.isInteger(id) && id >= 1 && id <= TOTAL_GAMES,
-  );
+  const valid = ids.filter((id): id is number => typeof id === 'number' && GAME_IDS.has(id));
   return [...new Set(valid)].sort((a, b) => a - b);
 }
 
@@ -36,7 +34,7 @@ function sanitizePlayCounts(raw: unknown): Record<number, number> {
   const out: Record<number, number> = {};
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
     const id = Number(key);
-    if (Number.isInteger(id) && id >= 1 && id <= TOTAL_GAMES && typeof value === 'number' && value >= 0) {
+    if (GAME_IDS.has(id) && typeof value === 'number' && value >= 0) {
       out[id] = value;
     }
   }

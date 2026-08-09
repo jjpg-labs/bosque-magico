@@ -3,7 +3,7 @@ import { GirlAvatar } from './GirlAvatar';
 import { ChoiceGame } from './games/ChoiceGame';
 import { MemoryGame } from './games/MemoryGame';
 import { playSound } from '../lib/audio';
-import { TOTAL_GAMES } from '../lib/games/catalog';
+import { nextGameId } from '../lib/games/catalog';
 import type { GameDefinition } from '../lib/games/types';
 
 interface GameContainerProps {
@@ -29,7 +29,7 @@ export function GameContainer({ game, onBack, onSpeak, onComplete, onNext, tier 
     onComplete(game.id);
   }, [game.id, onComplete]);
 
-  const isLastGame = game.id >= TOTAL_GAMES;
+  const isLastGame = nextGameId(game.id) === undefined;
 
   return (
     <section className="bg-white rounded-3xl p-4 md:p-6 shadow-xl border-4 border-emerald-200 min-h-[480px] flex flex-col">

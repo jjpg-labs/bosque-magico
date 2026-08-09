@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
+import { GAMES, STICKERS } from '../lib/games/catalog';
 import { ChoiceGame } from '../components/games/ChoiceGame';
 import { seededRng } from '../lib/random';
 import type { Round } from '../lib/games/types';
@@ -70,16 +71,18 @@ describe('ChoiceGame', () => {
 });
 
 describe('App', () => {
-  it('muestra el mapa con las 19 pruebas', async () => {
+  it('muestra el mapa con todas las pruebas del catálogo', async () => {
     render(<App />);
     expect(await screen.findByText('¡El Mapa del Bosque! 🌳')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^Prueba \d+:/ })).toHaveLength(19);
+    expect(screen.getAllByRole('button', { name: /^Prueba \d+:/ })).toHaveLength(GAMES.length);
   });
 
   it('empieza sin pegatinas y solo con la primera prueba abierta', async () => {
     render(<App />);
 
-    expect(await screen.findByRole('button', { name: /Álbum \(0\/19\)/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: `Álbum (0/${STICKERS.length})` }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Prueba 1:.*Disponible$/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /^Prueba 2:.*Bloqueada$/ })).toBeDisabled();
   });
@@ -92,7 +95,9 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('button', { name: /Álbum \(2\/19\)/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: `Álbum (2/${STICKERS.length})` }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Prueba 3:.*Disponible$/ })).toBeEnabled();
   });
 

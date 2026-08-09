@@ -216,8 +216,31 @@ export const GAMES: readonly GameDefinition[] = [
 
 export const TOTAL_GAMES = GAMES.length;
 
+/**
+ * Los ids que existen de verdad, para validar el progreso guardado.
+ *
+ * No vale con comparar contra `TOTAL_GAMES`: hoy coincide por accidente
+ * (ids 1..19 y 19 pruebas), pero en cuanto se reserven rangos de id por fase
+ * habrá ids mayores que `GAMES.length` y el progreso de esas pruebas se
+ * descartaría en silencio al recargar.
+ */
+export const GAME_IDS: ReadonlySet<number> = new Set(GAMES.map((g) => g.id));
+
 export function findGame(id: number): GameDefinition | undefined {
   return GAMES.find((g) => g.id === id);
+}
+
+/**
+ * La prueba siguiente en el orden del mapa, o `undefined` si es la última.
+ *
+ * Se recorre el catálogo en vez de sumar 1 al id: en cuanto los ids dejen de
+ * ser consecutivos, «Siguiente» saltaría a un id inexistente y la pantalla se
+ * quedaría en blanco.
+ */
+export function nextGameId(currentId: number): number | undefined {
+  const index = GAMES.findIndex((g) => g.id === currentId);
+  if (index === -1) return undefined;
+  return GAMES[index + 1]?.id;
 }
 
 export interface Sticker {

@@ -1,4 +1,5 @@
 import { Shape } from './Shape';
+import { unhandled } from '../lib/exhaustive';
 import type { Prompt } from '../lib/games/types';
 
 /**
@@ -90,8 +91,11 @@ export function PromptView({ prompt }: { prompt: Prompt }) {
 
     case 'two-groups':
       return (
-        <div className="flex items-center justify-center gap-4">
+        <div className="bg-teal-50 border-2 border-teal-200 rounded-3xl p-5 flex items-center justify-center gap-4">
           <EmojiGrid items={prompt.a} />
+          <span className="text-3xl font-bold text-teal-400" aria-hidden="true">
+            |
+          </span>
           <EmojiGrid items={prompt.b} />
         </div>
       );
@@ -110,5 +114,8 @@ export function PromptView({ prompt }: { prompt: Prompt }) {
           <span className="text-xl font-bold text-amber-800">{prompt.word}</span>
         </div>
       );
+
+    default:
+      return unhandled(prompt);
   }
 }

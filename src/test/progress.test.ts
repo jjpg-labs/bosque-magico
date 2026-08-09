@@ -11,6 +11,7 @@ import {
   tierFor,
 } from '../lib/progress';
 import type { Progress } from '../lib/progress';
+import { GAMES } from '../lib/games/catalog';
 
 function progressWith(completed: number[], playCounts: Record<number, number> = {}): Progress {
   return { completed, playCounts };
@@ -105,12 +106,28 @@ describe('persistencia', () => {
     expect(loadProgress(localStorage)).toEqual(emptyProgress);
   });
 
-  it('descarta ids fuera de rango o de tipo incorrecto', () => {
+  it('descarta ids que no existen en el catálogo o de tipo incorrecto', () => {
+    const inexistente = Math.max(...GAMES.map((g) => g.id)) + 1;
     localStorage.setItem(
       'bosque_magico_progress_v2',
-      JSON.stringify({ completed: [1, 99, -3, 'dos', null, 2, 2] }),
+      JSON.stringify({ completed: [1, inexistente, -3, 'dos', null, 2, 2] }),
     );
     expect(loadProgress(localStorage)).toEqual(progressWith([1, 2]));
+  });
+
+  it('conserva íntegro el progreso de todas las pruebas del catálogo', () => {
+    // Regresión de pérdida de datos: `sanitize` validaba contra `TOTAL_GAMES`
+    // en vez de contra los ids reales. Funcionaba de casualidad porque los
+    // ids eran 1..19 y había 19 pruebas; en cuanto el catálogo tenga huecos
+    // de id, esa versión borraba en silencio las pruebas superadas y las
+    // pegatinas ganadas al recargar.
+    const completed = GAMES.map((g) => g.id);
+    const playCounts = Object.fromEntries(GAMES.map((g) => [g.id, 4]));
+    saveProgress({ completed, playCounts }, localStorage);
+
+    const loaded = loadProgress(localStorage);
+    expect(loaded.completed).toEqual(completed);
+    expect(loaded.playCounts).toEqual(playCounts);
   });
 
   it('migra un progreso v2 sin playCounts a un objeto vacío', () => {

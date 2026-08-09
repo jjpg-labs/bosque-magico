@@ -50,7 +50,7 @@ export const VOWEL_WORDS: readonly Critter[] = [
   { emoji: '⭐', name: 'Estrella' },
   { emoji: '🏝️', name: 'Isla' },
   { emoji: '🧲', name: 'Imán' },
-  { emoji: '🏠', name: 'Iglú' },
+  { emoji: '⛪', name: 'Iglesia' },
   { emoji: '🐻', name: 'Oso' },
   { emoji: '🐛', name: 'Oruga' },
   { emoji: '👁️', name: 'Ojo' },
@@ -119,7 +119,9 @@ export const CATEGORIES: ReadonlyArray<{ name: string; items: readonly string[] 
   { name: 'animales', items: ['🐶', '🐱', '🐰', '🐻', '🐸', '🦊'] },
   { name: 'frutas', items: ['🍎', '🍌', '🍇', '🍓', '🍊', '🍐'] },
   { name: 'vehículos', items: ['🚗', '🚌', '🚲', '✈️', '🚂', '🚚'] },
-  { name: 'flores', items: ['🌸', '🌻', '🌷', '🌹', '🌼', '🪻'] },
+  // Nada de emojis de Unicode 14.0+ (🪻, 🫎...): en Android 10 y anteriores
+  // se pintan como una caja vacía.
+  { name: 'flores', items: ['🌸', '🌻', '🌷', '🌹', '🌼', '🌺'] },
   { name: 'ropa', items: ['👕', '👖', '🧦', '👗', '🧥', '👟'] },
   { name: 'instrumentos', items: ['🎸', '🥁', '🎺', '🎷', '🎹', '🎻'] },
   { name: 'comida', items: ['🍕', '🍔', '🍟', '🌮', '🍩', '🥐'] },
@@ -191,9 +193,10 @@ export const RHYME_FAMILIES: ReadonlyArray<
     { emoji: '🥁', word: 'tambor' },
   ],
   [
+    // «lápiz» estaba aquí y no rima: es llana en -ápiz, no aguda en -íz.
     { emoji: '👃', word: 'nariz' },
-    { emoji: '✏️', word: 'lápiz' },
     { emoji: '🌽', word: 'maíz' },
+    { emoji: '😀', word: 'feliz' },
   ],
   [
     { emoji: '🐟', word: 'pez' },

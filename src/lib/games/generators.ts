@@ -28,7 +28,11 @@ import type { Option, Round, RoundGenerator, ShapeName } from './types';
 /** Marcas diacríticas Unicode, para poder comparar «Á» con «A». */
 const COMBINING_MARKS = /[\u0300-\u036f]/g;
 
-const ALPHABET = 'ABCDEFGHIJKLMNOPRSTUV'.split('');
+// Alfabeto completo salvo la K y la W, que en español solo aparecen en
+// extranjerismos y no son iniciales útiles a esta edad. La Ñ, la Q, la X, la
+// Y y la Z sí: hacen falta como distractores en cuanto el pool tiene palabras
+// como «Queso», «Zapato» o «Yogur».
+const ALPHABET = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ'.split('');
 
 /** Letra inicial en mayúscula y sin tilde: «Árbol» → «A». */
 export function initialLetter(word: string): string {
@@ -472,10 +476,31 @@ const CHALLENGE_POOL: readonly RoundGenerator[] = [
   genRoutine,
 ];
 
-export const genFinalChallenge: RoundGenerator = (rng) => pick(rng, CHALLENGE_POOL)(rng);
+// El `tier` se propaga al generador elegido: sin esto, el desafío final era
+// la única prueba que nunca subía de dificultad por muchas veces que se jugara.
+export const genFinalChallenge: RoundGenerator = (rng, tier = 0) =>
+  pick(rng, CHALLENGE_POOL)(rng, tier);
 
 /**
- * Genera `count` rondas evitando repetir la misma pregunta dentro de la tanda.
+ * Identifica un ejercicio concreto, no solo su enunciado.
+ *
+ * Deduplicar por `question` no servía de nada en los siete generadores cuyo
+ * enunciado es siempre el mismo («¿Cómo se siente?», «¿Cuántos hay?»...): la
+ * ronda se daba por distinta aunque saliera la misma cara. Comparando también
+ * el dibujo del enunciado y la respuesta correcta, dos rondas solo cuentan
+ * como iguales si de verdad piden lo mismo.
+ */
+function coreKey(round: Round): string {
+  const correct = round.options.find((option) => option.correct);
+  return [
+    round.question,
+    JSON.stringify(round.prompt),
+    JSON.stringify(correct?.display),
+  ].join('|');
+}
+
+/**
+ * Genera `count` rondas evitando repetir el mismo ejercicio dentro de la tanda.
  * Se limita el número de reintentos para no bloquearse cuando el generador
  * tiene poca variedad: «¿Dónde hay MÁS?» solo produce dos enunciados, así que
  * a partir de la tercera ronda la repetición es inevitable y se acepta.
@@ -491,10 +516,10 @@ export function generateRounds(
 
   for (let i = 0; i < count; i++) {
     let round = generate(rng, tier);
-    for (let attempt = 0; attempt < 12 && used.has(round.question); attempt++) {
+    for (let attempt = 0; attempt < 12 && used.has(coreKey(round)); attempt++) {
       round = generate(rng, tier);
     }
-    used.add(round.question);
+    used.add(coreKey(round));
     rounds.push(round);
   }
 
