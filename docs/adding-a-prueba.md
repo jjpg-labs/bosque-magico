@@ -3,7 +3,7 @@
 Esta es la guía de referencia — para humanos y para asistentes de IA (Claude,
 Gemini o cualquier otro) — para añadir una prueba nueva a **El Bosque Mágico
 de los Bichitos** sin romper nada. Es la única fuente de esta receta: los
-ficheros `CLAUDE.md`, `GEMINI.md` y los comandos/skills del proyecto la
+ficheros `AGENTS.md`, `GEMINI.md` y los comandos/skills del proyecto la
 referencian en vez de repetirla, así que si algo cambia aquí, cambia en todas
 partes a la vez.
 
